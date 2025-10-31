@@ -5,7 +5,7 @@
 #Input
 #update
 #draw
-  
+#yay ic an use github tform vs code
 # importing the libraries to begin the code with proper values
 import math
 import random
