@@ -39,8 +39,6 @@ class Game:
 
 
     def new(self):
-        #gravity acceleration for negative y direction acceleration
-        self.gravity = 1.5
         # the sprite Group allows us to upate and draw sprite in grouped batches
         self.load_data()
         #sprite groups to differentiate between types of sprites

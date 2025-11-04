@@ -43,4 +43,4 @@ def edit_center(rect, desired_center):
     return (desired_center[0] - rect.width/2, desired_center[1] - rect.height/2)
 
 def calculatedist(co1,co2):
-    return sqrt((co1[0]-co2[0])^2+(co1[1]-co2[1])^2)
+    return math.sqrt((co1[0]-co2[0])**2+(co1[1]-co2[1])**2)

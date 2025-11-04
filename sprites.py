@@ -6,6 +6,7 @@ import random
 from pygame.sprite import Sprite
 from settings import *
 from utils import *
+import math
 import random
 vec = pg.math.Vector2
 #draw circle
@@ -31,19 +32,25 @@ class Player(Sprite):
         #how close player has to be to ball to kick
         self.range = 40
         #when kicked, how fast hte ball will go
-        self.kickspeed = 4
-
+        self.kick_force = 50
+        #jump power
+        self.jump_power = 100
         self.cd = Cooldown(150)
 
         self.ring = Ring(self.game, self, self.range)
-
+    def jump(self):
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        if hits:
+            self.vel.y = -self.jump_power
     def get_keys(self):
+        #gravity acceleration
         self.vel = vec(0,0)
         #movement based on wasd presses
         keys = pg.key.get_pressed()
         if keys[pg.K_w]:
             if keys[pg.K_k]:
                 self.vel.y = -self.speed*5
+                #self.jump()
             else:
                 self.vel.y = -self.speed
         if keys[pg.K_a]:
@@ -63,14 +70,23 @@ class Player(Sprite):
                 self.vel.x = self.speed
         #push ball if space pressed.
         if keys[pg.K_SPACE]:
-            if pg.calculatedist(self.rect.center,self.game.ball.rect.center)<self.range or pg.calculatedist(self.rect.center,self.game.ball.rect.center) == self.range:
+            if calculatedist(self.rect.center,self.game.ball.rect.center)<self.range or calculatedist(self.rect.center,self.game.ball.rect.center) == self.range:
                 self.kick()
 
     def kick(self):
-        #slope of line pointing to ball
-        slope = (self.pos.y-self.game.ball.pos.y)/(self.pos.x-self.game.ball.pos.x)
-        self.game.ball.vel = slope*self.kickspeed
 
+        #get direction to kick the ball by getting the difference between coords of player and ball
+            #kick ball in direction directly away from player
+        direction = vec(self.rect.center)-vec(self.game.ball.rect.center)
+        print(str(direction) + "direction")
+        if direction.length() != 0:
+            direction = direction.normalize()
+        print(str(direction)+" normalized direction")
+        #slope of line pointing to ball
+        #direction vector multiplied by kick force scalar
+        self.game.ball.vel = direction * self.kick_force
+
+        print(self.game.ball.vel)
 
     def collide_with_stuff(self, group, kill):
         hits = pg.sprite.spritecollide(self, group, kill)
@@ -250,7 +266,7 @@ class Ball(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         #gravity multiplier so it falls slower
-        self.gravitymultiplier = 0.5
+        self.gravitymultiplier = 0.
         #dimensions and characteristics
         self.radius = 8
         self.diameter = int(self.radius*2)
@@ -269,12 +285,10 @@ class Ball(Sprite):
 
     def update(self):
         #gravity force
-        # if not condition(coordinate rn but should be touching a sprite later)
-        if not self.pos.y > 300:
-            self.vel.y += self.game.gravity*self.gravitymultiplier
-        else:
-            if self.vel.y > 0:
-                self.vel.y = 0
+        # if not touching a floor gravity will negatively accelerate
+        self.vel.y += GRAVITY*self.gravitymultiplier
+        
+
         #update position var based on velocity
         self.pos.x += self.vel.x
         self.pos.y += self.vel.y
