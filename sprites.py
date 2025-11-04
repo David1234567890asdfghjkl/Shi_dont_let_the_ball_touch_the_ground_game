@@ -26,13 +26,13 @@ class Player(Sprite):
         #movement attributes
         self.speed = 7
         self.vel=vec(0,0)
-        self.pos=vec(x* TILESIZE[0],y* TILESIZE[1])
+        self.pos=vec(x,y)
         self.health = 6.7
 
         #how close player has to be to ball to kick
         self.range = 40
         #when kicked, how fast hte ball will go
-        self.kick_force = 50
+        self.kick_force = 12
         #jump power
         self.jump_power = 100
         self.cd = Cooldown(150)
@@ -70,21 +70,28 @@ class Player(Sprite):
                 self.vel.x = self.speed
         #push ball if space pressed.
         if keys[pg.K_SPACE]:
+            #kick if the ball is close enough
+            #update balls color, white if not kicking, red if kick but missed, blue is hit
             if calculatedist(self.rect.center,self.game.ball.rect.center)<self.range or calculatedist(self.rect.center,self.game.ball.rect.center) == self.range:
                 self.kick()
+                self.ring.color = BLUE
+            else:
+                self.ring.color = RED
+        else:
+            self.ring.color = WHITE
+            
+            
 
     def kick(self):
 
         #get direction to kick the ball by getting the difference between coords of player and ball
             #kick ball in direction directly away from player
         direction = vec(self.rect.center)-vec(self.game.ball.rect.center)
-        print(str(direction) + "direction")
         if direction.length() != 0:
             direction = direction.normalize()
-        print(str(direction)+" normalized direction")
         #slope of line pointing to ball
         #direction vector multiplied by kick force scalar
-        self.game.ball.vel = direction * self.kick_force
+        self.game.ball.vel = direction * -self.kick_force
 
         print(self.game.ball.vel)
 
@@ -156,9 +163,10 @@ class Ring(Sprite):
         self.radius = radius
         self.diameter = self.radius*2
         self.pos = self.player.pos
+        self.color = WHITE
         self.image = pg.Surface((self.diameter,self.diameter), pg.SRCALPHA)
         # Draw hollow circle
-        pg.draw.circle(self.image, WHITE, (self.radius, self.radius), self.radius, 1)
+        pg.draw.circle(self.image, self.color, (self.radius, self.radius), self.radius, 1)
         #rect of sprite surface
         self.rect = self.image.get_rect()
 
@@ -168,7 +176,9 @@ class Ring(Sprite):
         self.pos = vec(edit_center(self.rect, self.player.rect.center))
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
-
+        #redraw image so it can update
+        pg.draw.circle(self.image, self.color, (self.radius, self.radius), self.radius, 1)
+        
 class Mob(Sprite):
     def __init__(self, game, x, y,color):
         self.groups = game.all_sprites, game.all_mobs
@@ -238,7 +248,7 @@ class Mob(Sprite):
                 self.vel.x = -self.speed
 
 class Wall(Sprite):
-    def __init__(self, game, x, y, state):
+    def __init__(self, game, x, y):
         self.groups = game.all_sprites, game.all_walls
         Sprite.__init__(self, self.groups)
         self.vel= vec(0,0)
@@ -252,7 +262,7 @@ class Wall(Sprite):
         #[0] is width, [1] is height
         self.rect.x = x*TILESIZE[0]
         self.rect.y = y*TILESIZE[1]
-        self.state = state
+        self.state = "immovable"
 
     def update(self):
         self.rect.x += self.vel.x
@@ -266,11 +276,16 @@ class Ball(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         #gravity multiplier so it falls slower
-        self.gravitymultiplier = 0.
+        self.gravitymultiplier = 0.04
         #dimensions and characteristics
         self.radius = 8
         self.diameter = int(self.radius*2)
         self.color = WHITE
+        #horizontal deacceleration due to air resistance vertical is too annoing
+            #y_decrease = drag coefficient * speed
+        self.drag_multiplier = 0.02
+        #terminal velocity is maximum downward speed
+        self.terminal_velocity = 3
         #velocity
         self.vel = vec(0,0)
         #position(not actual rect pos)
@@ -287,8 +302,11 @@ class Ball(Sprite):
         #gravity force
         # if not touching a floor gravity will negatively accelerate
         self.vel.y += GRAVITY*self.gravitymultiplier
-        
-
+        #air resistance decreases speed
+        self.vel.x -= self.drag_multiplier*self.vel.x
+        #if horizontal speed is close enough to zero, become zero since air resistance approaches 0 and never reaches
+        if abs(self.vel.x) < 0.5:
+            self.vel.x = 0
         #update position var based on velocity
         self.pos.x += self.vel.x
         self.pos.y += self.vel.y

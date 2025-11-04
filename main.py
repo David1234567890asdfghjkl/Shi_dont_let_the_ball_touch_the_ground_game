@@ -49,11 +49,20 @@ class Game:
         #player
         #mobs
         #walls
-        self.player = Player(self,16,16)
-        self.ball = Ball(self,40,40)
+        #spawn player and ball in the middle of the screen
+        self.player = Player(self,TILE_W/2*TILESIZE[0],300)
+        self.ball = Ball(self,TILE_W/2*TILESIZE[0],20)
         #establish when game is craeated
         self.start_time = pg.time.get_ticks()
-    
+
+        #creating a floor with wall sprites along the bottom of the screen
+        for floortile in range(TILE_W):
+            #generate multiple layer of walls depending on how thick floor should be
+            for layer in range(3):
+                w = Wall(self, floortile, TILE_H-layer)
+
+
+
     def run(self):
         while self.playing == True:
             self.dt = self.clock.tick(FPS) / 10000
