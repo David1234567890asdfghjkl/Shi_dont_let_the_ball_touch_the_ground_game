@@ -322,3 +322,7 @@ class Ball(Sprite):
         #update rect position based on pos var
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
+
+        #bounce off left and right wall, reverse vel x
+        if self.rect.right == WIDTH or self.rect.right > WIDTH or self.rect.left == 0 or self.rect.left <0:
+            self.vel.x = -self.vel.x
