@@ -61,6 +61,12 @@ class Game:
             for layer in range(3):
                 w = Wall(self, floortile, TILE_H-layer)
 
+        #making walls right outside of screen so player cant walk off the screen into the void
+        #2 walls l and r
+        for walls in range(TILE_H):
+            w = Wall(self,-1,walls)
+        for walls in range(TILE_H):
+            w = Wall(self,TILE_W, walls)
 
 
     def run(self):
