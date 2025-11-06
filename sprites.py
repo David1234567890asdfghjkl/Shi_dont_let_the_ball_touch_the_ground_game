@@ -48,6 +48,8 @@ class Player(Sprite):
         self.cd = Cooldown(150)
 
         self.ring = Ring(self.game, self, self.range)
+        #time that ring will flash when successfully kicking
+        self.hitflash = Cooldown(150)
 
     def jump(self):
         print(self.jumps)
@@ -110,10 +112,12 @@ class Player(Sprite):
             #update balls color, white if not kicking, red if kick but missed, blue is hit
             if calculatedist(self.rect.center,self.game.ball.rect.center)<self.range or calculatedist(self.rect.center,self.game.ball.rect.center) == self.range:
                 self.kick()
+                #start timer so ring can flash blue until done
+                self.hitflash.start()
                 self.ring.color = BLUE
-            else:
+            elif self.hitflash.ready():
                 self.ring.color = RED
-        else:
+        elif self.hitflash.ready():
             self.ring.color = WHITE
 
     def kick(self):
@@ -347,5 +351,11 @@ class Ball(Sprite):
         self.rect.y = self.pos.y
 
         #bounce off left and right wall, reverse vel x
-        if self.rect.right == WIDTH or self.rect.right > WIDTH or self.rect.left == 0 or self.rect.left <0:
+        if self.rect.right == WIDTH or self.rect.right > WIDTH:
+            #set rect.right to the border to avoid ball going too far out and repeatedly reversing direction
+            self.rect.right = WIDTH
+            #reverse vel.x to bounce
+            self.vel.x = -self.vel.x
+        elif self.rect.left == 0 or self.rect.left <0:
+            self.rect.left = 0
             self.vel.x = -self.vel.x

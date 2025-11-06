@@ -86,8 +86,6 @@ class Game:
             if event.type == pg.QUIT:
                 print("the end is near")
                 self.playing = False
-            if event.type == pg.MOUSEBUTTONDOWN:
-                pass
 
     def draw_text(self, surface, text, size, color, x, y):
         font_name = pg.font.match_font('arial')
