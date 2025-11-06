@@ -32,18 +32,25 @@ class Player(Sprite):
         self.max_horizontal_speed = 8
         #amount vel x will decrease when keys not touched
         self.deaccel = 0.5
+        #how many double jumps player will get when touching floor
+        self.extra_jumps = 2
+        #how many double jumps player currently has
+        self.jumps = 2
+        #cooldown so jump doesnt trigger multiple times when w pressed to prevent double jumping 
+        self.jump_cd = Cooldown(420)
 
         #how close player has to be to ball to kick
         self.range = 40
         #when kicked, how fast hte ball will go
         self.kick_force = 12
         #jump power
-        self.jump_power = 15
+        self.jump_power = 17
         self.cd = Cooldown(150)
 
         self.ring = Ring(self.game, self, self.range)
 
     def jump(self):
+        print(self.jumps)
         #if touching ground, jump, jump sets vel y to a predetermined value
         #teleport down to check if on ground because when on the ground, player floats above the ground due to collision
         self.rect.y += GRAVITY
@@ -51,7 +58,23 @@ class Player(Sprite):
         self.rect.y -= GRAVITY
         #reverse teleportation so it doesnt conflict with the wall collide function
         if hits:
-            self.vel.y = -self.jump_power
+            if self.jump_cd.ready():
+                #start jump cooldown so player waits before w triggers jump again
+                self.jump_cd.start()
+
+                self.vel.y = -self.jump_power
+                #is touching floor so reset double jumps amount
+                self.jumps = self.extra_jumps
+            #if player has double jumps jump and subtract a jump
+
+        elif self.jumps > 0:
+            if self.jump_cd.ready():
+                #start jump cooldown so player waits before w triggers jump again
+                self.jump_cd.start()
+
+                self.jumps -=1
+                self.vel.y = -self.jump_power
+    
 
     def get_keys(self):
         #gravity acceleration
