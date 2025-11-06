@@ -24,50 +24,63 @@ class Player(Sprite):
         #make image the player png
         self.rect = self.image.get_rect()
         #movement attributes
-        self.speed = 7
+        #speed is speed change each tick when ad keys pressed
+        self.speed = 1
         self.vel=vec(0,0)
         self.pos=vec(x,y)
-        self.health = 6.7
+        #max horizontal_speed, movement key in same direction will no longer accelerate
+        self.max_horizontal_speed = 8
+        #amount vel x will decrease when keys not touched
+        self.deaccel = 0.5
 
         #how close player has to be to ball to kick
         self.range = 40
         #when kicked, how fast hte ball will go
         self.kick_force = 12
         #jump power
-        self.jump_power = 100
+        self.jump_power = 15
         self.cd = Cooldown(150)
 
         self.ring = Ring(self.game, self, self.range)
+
     def jump(self):
+        #if touching ground, jump, jump sets vel y to a predetermined value
+        #teleport down to check if on ground because when on the ground, player floats above the ground due to collision
+        self.rect.y += GRAVITY
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        self.rect.y -= GRAVITY
+        #reverse teleportation so it doesnt conflict with the wall collide function
         if hits:
             self.vel.y = -self.jump_power
+
     def get_keys(self):
         #gravity acceleration
-        self.vel = vec(0,0)
+        self.vel.y += GRAVITY
         #movement based on wasd presses
         keys = pg.key.get_pressed()
         if keys[pg.K_w]:
-            if keys[pg.K_k]:
-                self.vel.y = -self.speed*5
-                #self.jump()
-            else:
-                self.vel.y = -self.speed
+            #jump when w presed
+            self.jump()
+
         if keys[pg.K_a]:
-            if keys[pg.K_k]:
-                self.vel.x = -self.speed*5
+            if self.vel.x > -self.max_horizontal_speed:
+                #if speed to the left hasnt reached max speed, accelerate to the left
+                self.vel.x -= self.speed
             else:
-                self.vel.x = -self.speed
-        if keys[pg.K_s]:
-            if keys[pg.K_k]:
-                self.vel.y = self.speed*5
-            else:
-                self.vel.y = self.speed
+                # if velocity surpassed max speed, set to max speed
+                self.vel.x = -self.max_horizontal_speed
+        elif self.vel.x < 0:
+            self.vel.x += self.deaccel
+
         if keys[pg.K_d]:
-            if keys[pg.K_k]:
-                self.vel.x = self.speed*5
+            #d press same as a press but inversed
+            if self.vel.x < self.max_horizontal_speed:
+                self.vel.x += self.speed
             else:
-                self.vel.x = self.speed
+                self.vel.x = self.max_horizontal_speed
+        elif self.vel.x > 0:
+            self.vel.x -= self.deaccel
+   
         #push ball if space pressed.
         if keys[pg.K_SPACE]:
             #kick if the ball is close enough
@@ -79,8 +92,6 @@ class Player(Sprite):
                 self.ring.color = RED
         else:
             self.ring.color = WHITE
-            
-            
 
     def kick(self):
 
@@ -92,8 +103,6 @@ class Player(Sprite):
         #slope of line pointing to ball
         #direction vector multiplied by kick force scalar
         self.game.ball.vel = direction * -self.kick_force
-
-        print(self.game.ball.vel)
 
     def collide_with_stuff(self, group, kill):
         hits = pg.sprite.spritecollide(self, group, kill)
@@ -276,12 +285,12 @@ class Ball(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         #gravity multiplier so it falls slower
-        self.gravitymultiplier = 0.04
+        self.gravitymultiplier = 0.4
         #dimensions and characteristics
         self.radius = 8
         self.diameter = int(self.radius*2)
         self.color = WHITE
-        #horizontal deacceleration due to air resistance vertical is too annoing
+        #vertical deacceleration due to air resistance vertical is too annoing
             #y_decrease = drag coefficient * speed
         self.drag_multiplier = 0.02
         #terminal velocity is maximum downward speed
