@@ -29,7 +29,7 @@ class Player(Sprite):
         self.vel=vec(0,0)
         self.pos=vec(x,y)
         #max horizontal_speed, movement key in same direction will no longer accelerate
-        self.max_horizontal_speed = 8
+        self.max_horizontal_speed = 6
         #amount vel x will decrease when keys not touched
         self.deaccel = 0.5
         #how many double jumps player will get when touching floor
@@ -38,28 +38,27 @@ class Player(Sprite):
         self.jumps = 2
         #cooldown so jump doesnt trigger multiple times when w pressed to prevent double jumping 
         self.jump_cd = Cooldown(420)
-
+        #jump power
+        self.jump_power = 19
+        #velocity increase from pressing lshift to fall slower
+        self.float_speed = 0.7
+        #fastest vertical speed if floating via lshift
+        self.max_float_speed = 3
+        #velocity decrease pressing s to fall faster gives
+        self.fall_speed = 0.7
         #how close player has to be to ball to kick
         self.range = 40
         #when kicked, how fast hte ball will go
-        self.kick_force = 12
-        #jump power
-        self.jump_power = 17
+        self.kick_force = 13
         self.cd = Cooldown(150)
-
+        #is player touching ground
+        self.touching_ground = False
         self.ring = Ring(self.game, self, self.range)
         #time that ring will flash when successfully kicking
         self.hitflash = Cooldown(150)
 
     def jump(self):
-        print(self.jumps)
-        #if touching ground, jump, jump sets vel y to a predetermined value
-        #teleport down to check if on ground because when on the ground, player floats above the ground due to collision
-        self.rect.y += GRAVITY
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
-        self.rect.y -= GRAVITY
-        #reverse teleportation so it doesnt conflict with the wall collide function
-        if hits:
+        if self.touching_ground == True:
             if self.jump_cd.ready():
                 #start jump cooldown so player waits before w triggers jump again
                 self.jump_cd.start()
@@ -86,7 +85,17 @@ class Player(Sprite):
         if keys[pg.K_w]:
             #jump when w presed
             self.jump()
+        #holding l shift makes player fall slower and enforces slower max vertical speed
+        if keys[pg.K_LSHIFT]:
+            if self.touching_ground == False and self.vel.y>0:
+                self.vel.y -= self.float_speed
+                if self.vel.y< self.max_float_speed:
+                    self.vel.y = self.max_float_speed
 
+        #s key makes player fall faster via extra acceleration
+        if keys[pg.K_s]:
+            if self.touching_ground == False:
+                self.vel.y += self.fall_speed
         if keys[pg.K_a]:
             if self.vel.x > -self.max_horizontal_speed:
                 #if speed to the left hasnt reached max speed, accelerate to the left
@@ -109,7 +118,7 @@ class Player(Sprite):
         #push ball if space pressed.
         if keys[pg.K_SPACE]:
             #kick if the ball is close enough
-            #update balls color, white if not kicking, red if kick but missed, blue is hit
+            #update balls color, white if not kicking, red if kick but missed, blue is hit, green if ball can be hit(overrides blue) but code is elsewhere
             if calculatedist(self.rect.center,self.game.ball.rect.center)<self.range or calculatedist(self.rect.center,self.game.ball.rect.center) == self.range:
                 self.kick()
                 #start timer so ring can flash blue until done
@@ -177,6 +186,16 @@ class Player(Sprite):
                     self.rect.y = self.pos.y
 
     def update(self):
+        #check if ball is on gorund
+        #teleport down to check if on ground because when on the ground, player floats above the ground due to collision
+        self.rect.y += GRAVITY
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        self.rect.y -= GRAVITY
+        #reverse teleportation so it doesnt conflict with the wall collide function
+        if hits:
+            self.touching_ground = True
+        else:
+            self.touching_ground = False
         #get key presses
         self.get_keys()
         #only move if not dead
@@ -188,6 +207,9 @@ class Player(Sprite):
         self.collide_with_walls('y')
         #check for collisions with mobs
         self.collide_with_stuff(self.game.all_mobs, False)
+        #if player can hit ball, flash green
+        if calculatedist(self.rect.center,self.game.ball.rect.center)<self.range or calculatedist(self.rect.center,self.game.ball.rect.center) == self.range:
+            self.ring.color = GREEN
 
 #RING to attach to the player to indicate the area in which the player can kick the ball
 class Ring(Sprite):
@@ -206,109 +228,14 @@ class Ring(Sprite):
         #rect of sprite surface
         self.rect = self.image.get_rect()
 
-
-
     def update(self):
-        self.pos = vec(edit_center(self.rect, self.player.rect.center))
-        self.rect.x = self.pos.x
-        self.rect.y = self.pos.y
+        self.rect.center = self.player.rect.center
         #redraw image so it can update
         pg.draw.circle(self.image, self.color, (self.radius, self.radius), self.radius, 1)
-        
-class Mob(Sprite):
-    def __init__(self, game, x, y,color):
-        self.groups = game.all_sprites, game.all_mobs
-        Sprite.__init__(self, self.groups)
-        self.game = game
-        self.color = color
-        self.image = pg.Surface((11, 8))
-        self.image.fill(self.color)
-        self.rect = self.image.get_rect()
-        self.rect.x = x*TILESIZE[0]
-        self.rect.y = y*TILESIZE[1]
-        self.speed = 3
-        self.vel = vec(self.speed*random.choice([1,-1]),self.speed*random.choice([1,-1]))
-        self.pos= vec(x* TILESIZE[0],y* TILESIZE[1])
-        self.collide = [0,0]
-        self.colliding = False
-
-    def collide_with_walls(self, dir):
-        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
-        if hits:
-            self.colliding = True
-
-            if dir == 'x':
-                if self.vel.x > 0:
-                    self.pos.x = hits[0].rect.left - self.rect.width
-                if self.vel.x < 0:
-                    self.pos.x = hits[0].rect.right
-                self.rect.x = self.pos.x
-            if dir == 'y':
-                if self.vel.y > 0:
-                    self.pos.y = hits[0].rect.top - self.rect.height
-                if self.vel.y < 0:
-                    self.pos.y = hits[0].rect.bottom
-                self.rect.y = self.pos.y
-        else:
-            self.colliding = False
-
-    def collide_with_stuff(self, group):
-        hits = pg.sprite.spritecollide(self, group, False)
-        if hits: 
-            #check what we hit and according
-            if str(hits[0].__class__.__name__) == "Wall":
-                #if hit a wall bounce
-                self.speed*=-1
-
-    def update(self):
-        self.pos.x += self.vel.x
-        self.rect.x = self.pos.x
-        self.collide_with_walls('x')
-        #bounce off walls in direction of player
-        #self.colliding is if we hit a wall and is found from self.collide_with_walls)()
-        if self.colliding:
-            self.vel.x *= -1
-            if self.pos.y < self.game.player.pos.y:
-                self.vel.y = self.speed
-            else:
-                self.vel.y = -self.speed
-
-        self.rect.y = self.pos.y
-        self.pos.y += self.vel.y
-        self.collide_with_walls('y')
-        if self.colliding:
-            self.vel.y *= -1
-            if self.pos.x < self.game.player.pos.x:
-                self.vel.x = self.speed
-            else:
-                self.vel.x = -self.speed
-
-class Wall(Sprite):
-    def __init__(self, game, x, y):
-        self.groups = game.all_sprites, game.all_walls
-        Sprite.__init__(self, self.groups)
-        self.vel= vec(0,0)
-        self.pos = vec(x,y) * TILESIZE[0]
-        self.game = game
-        self.groups = game.all_sprites
-        self.image = pg.Surface(TILESIZE)
-        self.value = random.randint(50,140)
-        self.image.fill((self.value,self.value,self.value))
-        self.rect = self.image.get_rect()
-        #[0] is width, [1] is height
-        self.rect.x = x*TILESIZE[0]
-        self.rect.y = y*TILESIZE[1]
-        self.state = "immovable"
-
-    def update(self):
-        self.rect.x += self.vel.x
-        self.rect.y += self.vel.y
-        self.vel.x =0
-        self.vel.y =0
 
 class Ball(Sprite):
     def __init__(self, game, x, y):
-        self.groups = game.all_sprites
+        self.groups = game.all_sprites, game.all_balls
         Sprite.__init__(self, self.groups)
         self.game = game
         #gravity multiplier so it falls slower
@@ -359,3 +286,62 @@ class Ball(Sprite):
         elif self.rect.left == 0 or self.rect.left <0:
             self.rect.left = 0
             self.vel.x = -self.vel.x
+
+class Wall(Sprite):
+    def __init__(self, game, x, y):
+        self.groups = game.all_sprites, game.all_walls
+        Sprite.__init__(self, self.groups)
+        self.vel= vec(0,0)
+        self.pos = vec(x,y) * TILESIZE[0]
+        self.game = game
+        self.image = pg.Surface(TILESIZE)
+        self.value = random.randint(50,140)
+        self.image.fill((self.value,self.value,self.value))
+        self.rect = self.image.get_rect()
+        #[0] is width, [1] is height
+        self.rect.x = x*TILESIZE[0]
+        self.rect.y = y*TILESIZE[1]
+        self.state = "immovable"
+
+    def update(self):
+        self.rect.x += self.vel.x
+        self.rect.y += self.vel.y
+        self.vel.x =0
+        self.vel.y =0
+
+#bouncer bounces ball away when they touch
+class Bouncer(Sprite):
+    def __init__(self,game,x,y):
+        self.groups = game.all_sprites, game.all_objects
+        Sprite.__init__(self, self.groups)
+        self.vel = vec(0,0)
+        self.pos = vec(x,y)
+        self.game = game
+        self.image = pg.Surface((19,19))
+        self.image.fill((BLUE))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.kick_force = 15
+
+    def movement(self):
+        pass
+    def kick(self):
+        #get direction to kick the ball by getting the difference between coords of player and ball
+            #kick ball in direction directly away from player
+        direction = vec(self.rect.center)-vec(self.game.ball.rect.center)
+        if direction.length() != 0:
+            direction = direction.normalize()
+        #slope of line pointing to ball
+        #direction vector multiplied by kick force scalar
+        self.game.ball.vel = direction * -self.kick_force
+
+    def update(self):
+        self.rect.x = self.pos.x
+        self.rect.y = self.pos.y
+        #reflects ball
+        hits = pg.sprite.spritecollide(self, self.game.all_balls, False)
+        if hits:
+            self.kick()
+
+

@@ -43,15 +43,20 @@ class Game:
         self.load_data()
         #sprite groups to differentiate between types of sprites
         self.all_sprites = pg.sprite.Group()
-        self.all_mobs = pg.sprite.Group()
+        #objects means all sprites that make it harder to keep ball up
+        self.all_objects = pg.sprite.Group()
         self.all_walls = pg.sprite.Group()
-        #creatde sprites based on map data
-        #player
-        #mobs
-        #walls
+        self.all_mobs = pg.sprite.Group()
+        self.all_balls = pg.sprite.Group()
+
+        #spawning grounds
+
+        #creatde sprites
         #spawn player and ball in the middle of the screen
         self.player = Player(self,TILE_W/2*TILESIZE[0],300)
         self.ball = Ball(self,TILE_W/2*TILESIZE[0],20)
+
+        w = Bouncer(self, 150,100 )
         #establish when game is craeated
         self.start_time = pg.time.get_ticks()
 

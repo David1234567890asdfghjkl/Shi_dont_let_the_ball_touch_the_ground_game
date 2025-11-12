@@ -37,10 +37,11 @@ class Cooldown:
             return True
         return False
 
-# function to easily set the center of soemthing to a certain tuple 
-# parameters are the Surface rect and desired center
-def edit_center(rect, desired_center):
-    return (desired_center[0] - rect.width/2, desired_center[1] - rect.height/2)
-
 def calculatedist(co1,co2):
     return math.sqrt((co1[0]-co2[0])**2+(co1[1]-co2[1])**2)
+
+#this class manages all spawning of enemy psirtes
+class SpawnManager():
+    def __init__(self):
+        #list says all the sprites to spawn
+        self.spawn_list = []
