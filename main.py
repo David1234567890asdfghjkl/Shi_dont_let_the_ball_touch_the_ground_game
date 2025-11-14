@@ -56,7 +56,7 @@ class Game:
         self.player = Player(self,TILE_W/2*TILESIZE[0],300)
         self.ball = Ball(self,TILE_W/2*TILESIZE[0],20)
 
-        w = Bouncer(self, 150,100 )
+        w = Bouncer(self,True, 150,100 )
         #establish when game is craeated
         self.start_time = pg.time.get_ticks()
 

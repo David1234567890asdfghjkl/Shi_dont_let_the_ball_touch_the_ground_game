@@ -7,7 +7,6 @@ from pygame.sprite import Sprite
 from settings import *
 from utils import *
 import math
-import random
 vec = pg.math.Vector2
 #draw circle
     #https://www.pygame.org/docs/ref/draw.html#pygame.draw.circle
@@ -41,9 +40,9 @@ class Player(Sprite):
         #jump power
         self.jump_power = 19
         #velocity increase from pressing lshift to fall slower
-        self.float_speed = 0.7
+        self.float_speed = 0.3
         #fastest vertical speed if floating via lshift
-        self.max_float_speed = 3
+        self.max_float_speed = 6
         #velocity decrease pressing s to fall faster gives
         self.fall_speed = 0.7
         #how close player has to be to ball to kick
@@ -89,14 +88,14 @@ class Player(Sprite):
         if keys[pg.K_LSHIFT]:
             if self.touching_ground == False and self.vel.y>0:
                 self.vel.y -= self.float_speed
-                if self.vel.y< self.max_float_speed:
+                if self.vel.y > self.max_float_speed:
                     self.vel.y = self.max_float_speed
 
         #s key makes player fall faster via extra acceleration
         if keys[pg.K_s]:
             if self.touching_ground == False:
                 self.vel.y += self.fall_speed
-        if keys[pg.K_a]:
+        if keys[pg.K_a]: 
             if self.vel.x > -self.max_horizontal_speed:
                 #if speed to the left hasnt reached max speed, accelerate to the left
                 self.vel.x -= self.speed
@@ -311,21 +310,75 @@ class Wall(Sprite):
 
 #bouncer bounces ball away when they touch
 class Bouncer(Sprite):
-    def __init__(self,game,x,y):
+    #random tells sprite whether it should generate at a random location, so x and y are optional
+        #Copilot helped make x and y optional
+    def __init__(self,game, randomspawn,x=67,y=67):
         self.groups = game.all_sprites, game.all_objects
         Sprite.__init__(self, self.groups)
         self.vel = vec(0,0)
         self.pos = vec(x,y)
         self.game = game
-        self.image = pg.Surface((19,19))
-        self.image.fill((BLUE))
+        self.image = pg.Surface((40,40))
         self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
         self.kick_force = 15
+        self.speed = 5
+        #die after 7 BOUNCES
+        self.lifetimebounces = 7
+        # # of bounces left 
+        self.bounces = self.lifetimebounces
 
+        #if random is false spawn at given cords 
+        if randomspawn == False:
+            self.rect.x = x
+            self.rect.y = y
+        else:
+            #teleport sprite to random in bound locations until it isnt touching a wall.
+            self.rect.x = random.randint(self.image.get_width(),WIDTH-self.image.get_width())
+            self.rect.y = random.randint(self.image.get_height(),HEIGHT-self.image.get_height())
+            hits = pg.sprite.spritecollide(self,self.game.all_walls, False)
+            while hits:
+                self.rect.x = random.randint(self.image.get_width(),WIDTH-self.image.get_width())
+                self.rect.y = random.randint(self.image.get_height(),HEIGHT-self.image.get_height())
+                hits = pg.sprite.spritecollide(self,self.game.all_walls, False)
+
+        #apear after suitable position is found
+        self.pos = vec(self.rect.x, self.rect.y)
+        self.color = BLUE    
+        self.image.fill((self.color))
+
+        #set vleocity in random direction
+        while self.vel.x == 0 and self.vel.y == 0:
+            self.vel = vec(random.randint(-100,100),random.randint(-100,100))
+        self.vel = self.vel.normalize()
+        self.vel = self.vel * self.speed
+    
     def movement(self):
-        pass
+        # bounce off walls and screen borders
+        #bouncing decreases lifetime by decreasing self.bounces
+        self.pos.x +=self.vel.x
+        self.rect.x = self.pos.x
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        if hits:
+            self.rect.x -=self.vel.x
+            self.vel.x *=-1
+            self.bounces -=1
+            
+        self.pos.y += self.vel.y
+        self.rect.y = self.pos.y
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        if hits:
+            self.rect.y -=self.vel.y
+            self.vel.y *=-1
+            self.bounces-=1
+
+        if self.rect.right > WIDTH or self.rect.left < 0:
+            self.rect.x-=self.vel.x
+            self.vel.x *=-1
+            self.bounces-=1
+        if self.rect.top> HEIGHT or self.rect.bottom < 0:
+            self.rect.y-=self.vel.y
+            self.vel.y *=-1
+            self.bounces-=1
     def kick(self):
         #get direction to kick the ball by getting the difference between coords of player and ball
             #kick ball in direction directly away from player
@@ -337,11 +390,18 @@ class Bouncer(Sprite):
         self.game.ball.vel = direction * -self.kick_force
 
     def update(self):
-        self.rect.x = self.pos.x
-        self.rect.y = self.pos.y
+        self.movement()
+        #die if run out of bounces
+        if self.bounces == 0 or self.bounces <0:
+            self.kill()
+        #change color based on bounces left before dying
+        self.color = ((self.lifetimebounces-self.bounces)/self.lifetimebounces*255,0, (self.lifetimebounces-(self.lifetimebounces-self.bounces))/self.lifetimebounces*255)
+        #fill so color updates
+        self.image.fill(self.color)
         #reflects ball
         hits = pg.sprite.spritecollide(self, self.game.all_balls, False)
         if hits:
             self.kick()
 
+    
 
