@@ -29,6 +29,7 @@ class Player(Sprite):
         self.pos=vec(x,y)
         #max horizontal_speed, movement key in same direction will no longer accelerate
         self.max_horizontal_speed = 6
+        self.max_fall_speed = 26
         #amount vel x will decrease when keys not touched
         self.deaccel = 0.5
         #how many double jumps player will get when touching floor
@@ -42,7 +43,7 @@ class Player(Sprite):
         #velocity increase from pressing lshift to fall slower
         self.float_speed = 0.3
         #fastest vertical speed if floating via lshift
-        self.max_float_speed = 6
+        self.max_float_speed = 5
         #velocity decrease pressing s to fall faster gives
         self.fall_speed = 0.7
         #how close player has to be to ball to kick
@@ -77,8 +78,11 @@ class Player(Sprite):
     
 
     def get_keys(self):
-        #gravity acceleration
-        self.vel.y += GRAVITY
+        #gravity acceleration if not reached max fall speed
+        if self.vel.y < self.max_fall_speed:
+            self.vel.y += GRAVITY
+        else:
+            self.vel.y = self.max_fall_speed
         #movement based on wasd presses
         keys = pg.key.get_pressed()
         if keys[pg.K_w]:
@@ -402,6 +406,86 @@ class Bouncer(Sprite):
         hits = pg.sprite.spritecollide(self, self.game.all_balls, False)
         if hits:
             self.kick()
-
     
+    #evil ball will follow the path of the ball
+    #evilballpositioner creates a list with all the positions of the ball during its life
+        #so when the evil ball starts updating which is after the positioner dies, it can go to the previous positions of the ball
+class EvilBallPositioner(Sprite):
+    def __init__(self,evilball,game,framedelay):
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.eb = evilball
+
+        #render circle
+        #ball image
+        self.radius = self.eb.radius
+        self.diameter = self.eb.diameter
+        self.color = PURPLE
+        #SRCALPHA to make the surface not fill black
+        self.image = pg.Surface((self.diameter, self.diameter), pg.SRCALPHA)
+        self.rect = self.image.get_rect()
+        pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
+        
+        #go to the ball and form image to foreshadow the coming of the evilball
+        self.pos = self.game.ball.pos
+        self.rect.x = self.pos.x
+        self.rect.y = self.pos.y
+        
+        #framedelay is the delay by the evilball will follow the ball
+        #it will be how long the positioner will be alive
+        self.framedelay = framedelay
+        #how many frames the sprite has been active
+        self.framesalive = 0
+        #list for positions of ball
+        self.ballpositions = []
+
+    def update(self):
+        #every frame, it records the position of the 
+        #thank you to github copilot for teaching me .copy() for vectors
+        self.ballpositions.append(self.game.ball.pos.copy())
+        self.framesalive +=1
+        if self.framesalive == self.framedelay:
+            #pass on ball's position data to evilball
+            self.eb.ballpositions = self.ballpositions
+            self.eb.birth()
+            self.kill()
+
+class EvilBall(Sprite):
+    def __init__(self, game):
+        self.game = game
+        self.radius = self.game.ball.radius
+        self.diameter = self.radius*2
+        self.color = PURPLE
+        self.pos = vec(67,67)
+        #ball image
+        #SRCALPHA to make the surface not fill black
+        self.image = pg.Surface((self.diameter, self.diameter), pg.SRCALPHA)
+        self.rect = self.image.get_rect()
+        
+        #how many frames the ball will delay when following the balls path
+        self.framedelay = 30
+        #list to track positions of ball, will be gotten from positioner when it dies
+        self.ballpositions = []
+
+        self.evilballpositioner = EvilBallPositioner(self,self.game,self.framedelay)
+        #wait for positioner to get list of positions
+        pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
+
+    def birth(self):
+        print("sigma"+str(self.ballpositions))
+        self.groups = self.game.all_sprites, self.game.all_objects
+        Sprite.__init__(self, self.groups)
+    
+    def update(self):
+        #go to position of ball framedelay frames ago
+        self.pos.x = self.ballpositions[0].x
+        self.pos.y = self.ballpositions[0].y
+        self.rect.x = self.pos.x
+        self.rect.y = self.pos.y
+        print(self.ballpositions)
+
+        self.ballpositions.append(self.game.ball.pos.copy())
+        self.ballpositions.remove(self.ballpositions[0])
+
 

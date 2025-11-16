@@ -39,6 +39,8 @@ class Game:
 
 
     def new(self):
+        self.dt = self.clock.tick(FPS) / 10000
+        # keep loop running at the right speed
         # the sprite Group allows us to upate and draw sprite in grouped batches
         self.load_data()
         #sprite groups to differentiate between types of sprites
@@ -57,6 +59,7 @@ class Game:
         self.ball = Ball(self,TILE_W/2*TILESIZE[0],20)
 
         w = Bouncer(self,True, 150,100 )
+        eb = EvilBall(self)
         #establish when game is craeated
         self.start_time = pg.time.get_ticks()
 
