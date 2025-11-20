@@ -28,7 +28,7 @@ class Player(Sprite):
         self.vel=vec(0,0)
         self.pos=vec(x,y)
         #max horizontal_speed, movement key in same direction will no longer accelerate
-        self.max_horizontal_speed = 6
+        self.max_horizontal_speed = 9
         self.max_fall_speed = 26
         #amount vel x will decrease when keys not touched
         self.deaccel = 0.5
@@ -123,7 +123,7 @@ class Player(Sprite):
             #kick if the ball is close enough
             #update balls color, white if not kicking, red if kick but missed, blue is hit, green if ball can be hit(overrides blue) but code is elsewhere
             if calculatedist(self.rect.center,self.game.ball.rect.center)<self.range or calculatedist(self.rect.center,self.game.ball.rect.center) == self.range:
-                self.kick()
+                kick(self,self.game.ball,self.kick_force)
                 #start timer so ring can flash blue until done
                 self.hitflash.start()
                 self.ring.color = BLUE
@@ -131,17 +131,6 @@ class Player(Sprite):
                 self.ring.color = RED
         elif self.hitflash.ready():
             self.ring.color = WHITE
-
-    def kick(self):
-
-        #get direction to kick the ball by getting the difference between coords of player and ball
-            #kick ball in direction directly away from player
-        direction = vec(self.rect.center)-vec(self.game.ball.rect.center)
-        if direction.length() != 0:
-            direction = direction.normalize()
-        #slope of line pointing to ball
-        #direction vector multiplied by kick force scalar
-        self.game.ball.vel = direction * -self.kick_force
 
     def collide_with_stuff(self, group, kill):
         hits = pg.sprite.spritecollide(self, group, kill)
@@ -327,7 +316,7 @@ class Bouncer(Sprite):
         self.kick_force = 15
         self.speed = 5
         #die after 7 BOUNCES
-        self.lifetimebounces = 7
+        self.lifetimebounces = 20
         # # of bounces left 
         self.bounces = self.lifetimebounces
 
@@ -344,7 +333,6 @@ class Bouncer(Sprite):
                 self.rect.x = random.randint(self.image.get_width(),WIDTH-self.image.get_width())
                 self.rect.y = random.randint(self.image.get_height(),HEIGHT-self.image.get_height())
                 hits = pg.sprite.spritecollide(self,self.game.all_walls, False)
-
         #apear after suitable position is found
         self.pos = vec(self.rect.x, self.rect.y)
         self.color = BLUE    
@@ -383,15 +371,6 @@ class Bouncer(Sprite):
             self.rect.y-=self.vel.y
             self.vel.y *=-1
             self.bounces-=1
-    def kick(self):
-        #get direction to kick the ball by getting the difference between coords of player and ball
-            #kick ball in direction directly away from player
-        direction = vec(self.rect.center)-vec(self.game.ball.rect.center)
-        if direction.length() != 0:
-            direction = direction.normalize()
-        #slope of line pointing to ball
-        #direction vector multiplied by kick force scalar
-        self.game.ball.vel = direction * -self.kick_force
 
     def update(self):
         self.movement()
@@ -405,7 +384,7 @@ class Bouncer(Sprite):
         #reflects ball
         hits = pg.sprite.spritecollide(self, self.game.all_balls, False)
         if hits:
-            self.kick()
+            kick(self, self.game.ball,self.kick_force)
     
     #evil ball will follow the path of the ball
     #evilballpositioner creates a list with all the positions of the ball during its life
@@ -450,30 +429,54 @@ class EvilBallPositioner(Sprite):
             self.eb.ballpositions = self.ballpositions
             self.eb.birth()
             self.kill()
-
-class EvilBall(Sprite):
-    def __init__(self, game):
+#Evil ball sprite is a display that show a copy of the ball but pink
+class EvilBallSprite(Sprite):
+    def __init__(self, game, eb):
+        self.eb = eb
+        self.game = game
+        self.groups = self.game.all_sprites, self.game.all_objects
+        Sprite.__init__(self, self.groups)
         self.game = game
         self.radius = self.game.ball.radius
         self.diameter = self.radius*2
-        self.color = PURPLE
-        self.pos = vec(67,67)
+        self.color = (255,0,255)
         #ball image
         #SRCALPHA to make the surface not fill black
-        self.image = pg.Surface((self.diameter, self.diameter), pg.SRCALPHA)
+        self.image = pg.Surface((self.diameter,self.diameter), pg.SRCALPHA)
+        self.rect = self.image.get_rect()
+        pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
+            
+    def update(self):
+        pass
+        
+class EvilBall(Sprite):
+    def __init__(self, game):
+        self.game = game
+        self.radius = 13
+        self.diameter = self.radius*2
+        self.color = (140,0,140)
+        self.pos = vec(67,67)
+        self.kick_force = 7
+        #create image of the ball sized evilball
+        self.evilballsprite = EvilBallSprite(self.game,self)
+        #ball image
+        #SRCALPHA to make the surface not fill black
+        self.image = pg.Surface((self.diameter,self.diameter), pg.SRCALPHA)
         self.rect = self.image.get_rect()
         
         #how many frames the ball will delay when following the balls path
-        self.framedelay = 30
+        self.framedelay = 15
         #list to track positions of ball, will be gotten from positioner when it dies
         self.ballpositions = []
 
         self.evilballpositioner = EvilBallPositioner(self,self.game,self.framedelay)
         #wait for positioner to get list of positions
-        pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
+        #draw hollow crcle
+        #pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
+        pg.draw.circle(self.image, self.color, (self.radius, self.radius), self.radius, 1)
 
+    #function for starting to exist
     def birth(self):
-        print("sigma"+str(self.ballpositions))
         self.groups = self.game.all_sprites, self.game.all_objects
         Sprite.__init__(self, self.groups)
     
@@ -483,9 +486,17 @@ class EvilBall(Sprite):
         self.pos.y = self.ballpositions[0].y
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
-        print(self.ballpositions)
+
+        self.evilballsprite.rect.center = self.rect.center
 
         self.ballpositions.append(self.game.ball.pos.copy())
         self.ballpositions.remove(self.ballpositions[0])
+
+        pg.draw.circle(self.image, self.color, (self.radius, self.radius), self.radius, 1)
+
+        #kick if touching ball
+        hits = pg.sprite.spritecollide(self, self.game.all_balls,False)
+        if hits:
+            kick(self,self.game.ball, self.kick_force)
 
 

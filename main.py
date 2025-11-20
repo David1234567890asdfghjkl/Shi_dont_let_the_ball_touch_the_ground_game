@@ -54,12 +54,6 @@ class Game:
         #spawning grounds
 
         #creatde sprites
-        #spawn player and ball in the middle of the screen
-        self.player = Player(self,TILE_W/2*TILESIZE[0],300)
-        self.ball = Ball(self,TILE_W/2*TILESIZE[0],20)
-
-        w = Bouncer(self,True, 150,100 )
-        eb = EvilBall(self)
         #establish when game is craeated
         self.start_time = pg.time.get_ticks()
 
@@ -69,6 +63,14 @@ class Game:
             for layer in range(3):
                 w = Wall(self, floortile, TILE_H-layer)
 
+        
+        #spawn player and ball in the middle of the screen
+        self.player = Player(self,TILE_W/2*TILESIZE[0],300)
+        self.ball = Ball(self,TILE_W/2*TILESIZE[0],20)
+
+        w = Bouncer(self,True, 150,100 )
+        eb = EvilBall(self)
+        
         #making walls right outside of screen so player cant walk off the screen into the void
         #2 walls l and r
         for walls in range(TILE_H):
@@ -102,7 +104,6 @@ class Game:
         text_rect = text_surface.get_rect()
         text_rect.midtop = (x,y)
         surface.blit(text_surface, text_rect)
-
 
     def draw(self):
         #black sreen

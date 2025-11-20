@@ -3,6 +3,7 @@ from settings import *
 import pygame as pg
 import time
 import math
+vec = pg.math.Vector2
 #map object
 class Map:
     #filename is the file class calls
@@ -45,3 +46,13 @@ class SpawnManager():
     def __init__(self):
         #list says all the sprites to spawn
         self.spawn_list = []
+
+def kick(kicker,kicked,kick_scalar):
+        #get direction to kick the kicked by getting the difference between coords of player and ball
+            #kick ball in direction directly away from kicker
+        direction = vec(kicker.rect.center)-vec(kicked.game.ball.rect.center)
+        if direction.length() != 0:
+            direction = direction.normalize()
+        #slope of line pointing to kicked
+        #direction vector multiplied by kick force scalar
+        kicker.game.ball.vel = direction * -kick_scalar
