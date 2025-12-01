@@ -23,18 +23,23 @@ pg.font.init()
 class Game:
     def __init__(self):
       pg.init()
+      pg.mixer.init()
       self.clock = pg.time.Clock()
       self.screen = pg.display.set_mode((WIDTH, HEIGHT))
-      pg.display.set_caption("the game")
+      pg.display.set_caption("the  game")
       self.playing = True
+      self.running = False
       self.lose = False
 
     def load_data(self):
         self.game_folder = path.dirname(__file__)
-        #self.map = Map(path.join(self.game_folder, 'level2.txt'))
         self.img_folder = path.join(self.game_folder, 'images')
+        self.snd_folder = path.join(self.game_folder, 'sounds')
         #loads images folder int memory
         self.player_img = pg.image.load(path.join(self.img_folder, 'blueball 32x32.png')).convert_alpha()
+        #load sounds
+        self.explosion_sound = pg.mixer.Sound(path.join(self.snd_folder,'explosion.mp3'))
+        self.vineboom_sound = pg.mixer.Sound(path.join(self.snd_folder,'vine_boom.mp3'))
         #loads images from images folder when load date is called
 
 
@@ -47,6 +52,7 @@ class Game:
         self.all_sprites = pg.sprite.Group()
         #objects means all sprites that make it harder to keep ball up
         self.all_objects = pg.sprite.Group()
+        self.all_colliding_objects = pg.sprite.Group()
         self.all_walls = pg.sprite.Group()
         self.all_mobs = pg.sprite.Group()
         self.all_balls = pg.sprite.Group()
@@ -65,12 +71,19 @@ class Game:
 
         
         #spawn player and ball in the middle of the screen
-        self.player = Player(self,TILE_W/2*TILESIZE[0],300)
-        self.ball = Ball(self,TILE_W/2*TILESIZE[0],20)
+        self.player = Player(self,0,0)
+        self.ball = Ball(self,0,0)
+        self.player.rect.center = (WIDTH/2,300)
+        self.player.pos = vec(self.player.rect.x,self.player.rect.y)
+        self.ball.rect.center = (WIDTH/2,20)
+        self.ball.pos = vec(self.ball.rect.x, self.ball.rect.y)
 
         w = Bouncer(self,True, 150,100 )
-        eb = EvilBall(self)
-        
+        w = Bouncer(self,True, 150,100 )
+        w = Bouncer(self,True, 150,100 )
+        w = Bouncer(self,True, 150,100 )
+        #eb = EvilBall(self)
+        t = timebomb(self, 167,89)
         #making walls right outside of screen so player cant walk off the screen into the void
         #2 walls l and r
         for walls in range(TILE_H):
@@ -134,5 +147,6 @@ class Game:
 if __name__ == "__main__":
     #   create instance of the Game class
     g = Game()
+    # while g.running:
     g.new()
     g.run()

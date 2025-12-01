@@ -5,7 +5,7 @@ TILESIZE = (32,32)
 #tuple for tile size
     #[0] is width, [1] is height
 TILE_W=14
-TILE_H=22
+TILE_H=20
 #dimensions of the gae window in terms of tiles
 WIDTH = TILE_W*TILESIZE[0]
 HEIGHT = TILE_H*TILESIZE[1]

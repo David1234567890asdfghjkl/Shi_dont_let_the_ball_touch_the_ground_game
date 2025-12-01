@@ -27,12 +27,15 @@ class Cooldown:
     def __init__(self, time):
         self.start_time = 0
         self.time = time
+        #timertime is how much time passed since start
+        self.timertime = 0
     #start timer by making the the start time the current time
     def start(self):
         self.start_time = pg.time.get_ticks()
     #if the self.time has passed since start time, return true
     def ready(self):
         current_time = pg.time.get_ticks()
+        self.timertime = current_time - self.start_time
         if current_time - self.start_time >= self.time:
         #True = timer finished
             return True
