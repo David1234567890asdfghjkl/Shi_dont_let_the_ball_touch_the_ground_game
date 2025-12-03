@@ -242,6 +242,7 @@ class Ball(Sprite):
     #centralized collision for the objects and the ball (only the objects that collide based off rectanagular shape)
         #for when the object rams into the ball instead of the ball running into the object
     def collided_by_stuff(self):
+    # used copilot and the github copilto quite a bit to debug collision interactions
         hits = pg.sprite.spritecollide(self, self.game.all_colliding_objects, False)
         if hits:
             #store hits[0] because another spritecollide is coming
@@ -591,24 +592,60 @@ class timebomb(Sprite):
         pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
         self.rect = self.image.get_rect()
 
+        #kickforce for hwne it eplodes
+        self.kick_force = 67
+
         self.vel = vec(0,0)
         self.pos = vec(x,y)
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
 
         self.timer = Cooldown(6000)
-        self.timeleft = self.timer.timertime
+        self.timeleft = self.timer.time
         self.timer.start()
-    def explode(self):
-        pass
-    def update(self):
-        self.timeleft = self.timer.timertime-self.timer.time
 
+    def explode(self):
+        self.game.explosion_sound.play()
+        self.explosion_particle = Explosion(self.game,self.pos.x,self.pos.y)
+        kick(self.explosion_particle, self.game.ball, self.kick_force)
+
+    def update(self):
+        self.timeleft = self.timer.time-self.timer.timertime
+        #when timer runs out explode and die
         if self.timer.ready():
+            self.explode()
             self.kill()
         else:
             #as time passes make bomb reder
             #when 100% red time will have run out
-            self.color = ((self.timeleft/self.timer.timertime),(self.timer.time/self.timer.timertime),0)
+            self.color = ((self.timer.timertime/self.timer.time)*255,(self.timeleft/self.timer.time)*255,0)
             pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
     
+class Explosion(Sprite):
+    def __init__(self, game, x, y):
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = self.game.explosion_img
+        #make image the explosion img
+        self.rect = self.image.get_rect()
+        self.rect.center = (x,y)
+        #the opacity the particle image starts with
+        self.max_opacity = 100
+        
+        #to see how long the particle stays on screen
+        self.timer = Cooldown(2167)
+        self.timeleft = self.timer.time
+        self.timer.start()
+
+    def update(self):
+        #copitlot helped with opacity
+        self.timeleft = self.timer.time - self.timer.timertime
+        #when timer runs out kill particle
+        if self.timer.ready():
+            self.kill()
+        #lower opacity as time goes on
+        print(self.image.get_alpha())
+        self.image.set_alpha(self.max_opacity*(self.timeleft/self.timer.time))
+        
+

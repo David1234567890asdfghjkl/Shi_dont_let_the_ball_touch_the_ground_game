@@ -36,6 +36,7 @@ class Game:
         self.img_folder = path.join(self.game_folder, 'images')
         self.snd_folder = path.join(self.game_folder, 'sounds')
         #loads images folder int memory
+        self.explosion_img = pg.image.load(path.join(self.img_folder, 'explosion 577x577.png')).convert_alpha()
         self.player_img = pg.image.load(path.join(self.img_folder, 'blueball 32x32.png')).convert_alpha()
         #load sounds
         self.explosion_sound = pg.mixer.Sound(path.join(self.snd_folder,'explosion.mp3'))
