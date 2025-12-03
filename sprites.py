@@ -242,6 +242,12 @@ class Ball(Sprite):
     #centralized collision for the objects and the ball (only the objects that collide based off rectanagular shape)
         #for when the object rams into the ball instead of the ball running into the object
     def collided_by_stuff(self):
+        #collide is whether a collision is sensed for that axis
+        xcollide = False
+        ycollide = False
+        #hit is whether it decides to actually kick the ball or do nothing
+        xhit = False
+        yhit = False
     # used copilot and the github copilto quite a bit to debug collision interactions
         hits = pg.sprite.spritecollide(self, self.game.all_colliding_objects, False)
         if hits:
@@ -256,33 +262,55 @@ class Ball(Sprite):
                 #if reversing the velocity for that tick didnt cause the collision, it didn't bump into the ball from that direction
                 if not hits:
                     #check what direction the collider is traveling to change ball vel accordingly
-                    if hit.vel.x > 0:
-                        #only if objects speed is higher or else ball collided with object
-                        if hit.vel.x > self.vel.x:
-                            self.vel.x = hit.kick_force
-                            self.rect.left = hit.rect.right
-                            self.pos.x = self.rect.x
-                    else:
-                        if hit.vel.x < self.vel.x:
-                            self.vel.x = -hit.kick_force
-                            self.rect.right = hit.rect.left
-                            self.pos.x = self.rect.x
+                    xcollide = True
 
             if hit.vel.y != 0:
                 hit.rect.y -= hit.vel.y
                 hits = pg.sprite.spritecollide(self, self.game.all_colliding_objects, False)
                 hit.rect.y += hit.vel.y
                 if not hits:
-                    if hit.vel.y > 0:
-                        if hit.vel.y > self.vel.y:
-                            self.vel.y = hit.kick_force
-                            self.rect.top = hit.rect.bottom
-                            self.pos.y = self.rect.y
-                    else:
-                        if hit.vel.y < self.vel.y:
-                            self.vel.y = -hit.kick_force
-                            self.rect.bottom = hit.rect.top
-                            self.pos.y = self.rect.y
+                    ycollide = True
+            
+            #if both xcollid and ycollide are true, decide to keep both or drop one 
+                #this is because of clarity issues for when bouncers have ball collide with corners causing a perfectly diagonal ball velocity
+                    #it makes more sense to choose one because ITS A RECTANGLE and the ball logically should only collide with one side
+            if xcollide == True:
+                xhit = True
+            if ycollide == True:
+                yhit = True
+            #decide which to choose, choose the faster axis velocity
+            if ycollide == True and xcollide == True:
+                if abs(hit.vel.y) > abs(hit.vel.x):
+                    xhit = False
+                elif abs(hit.vel.x) > abs(hit.vel.y):
+                    yhit = False
+                #if both are equal do nothing because both axiss hit
+
+            #if xhit is true, continue with x kick action and vice versa
+            if xhit == True:
+                if hit.vel.x > 0:
+                    #only if objects speed is higher or else ball collided with object
+                    if hit.vel.x > self.vel.x:
+                        self.vel.x = hit.kick_force
+                        self.rect.left = hit.rect.right
+                        self.pos.x = self.rect.x
+                else:
+                    if hit.vel.x < self.vel.x:
+                        self.vel.x = -hit.kick_force
+                        self.rect.right = hit.rect.left
+                        self.pos.x = self.rect.x
+
+            if yhit == True:
+                if hit.vel.y > 0:
+                    if hit.vel.y > self.vel.y:
+                        self.vel.y = hit.kick_force
+                        self.rect.top = hit.rect.bottom
+                        self.pos.y = self.rect.y
+                else:
+                    if hit.vel.y < self.vel.y:
+                        self.vel.y = -hit.kick_force
+                        self.rect.bottom = hit.rect.top
+                        self.pos.y = self.rect.y
 
     #for when ball collides into an object because of balls velocity
     def collide_with_stuff(self, dir):
@@ -329,9 +357,9 @@ class Ball(Sprite):
         self.pos.y += self.vel.y
         
         self.rect.x = self.pos.x
-        self.collide_with_stuff('x')
+        #self.collide_with_stuff('x')
         self.rect.y = self.pos.y
-        self.collide_with_stuff('y')
+        #self.collide_with_stuff('y')
 
         #bounce off left and right wall, reverse vel x
         if self.rect.right == WIDTH or self.rect.right > WIDTH:
@@ -593,7 +621,7 @@ class timebomb(Sprite):
         self.rect = self.image.get_rect()
 
         #kickforce for hwne it eplodes
-        self.kick_force = 67
+        self.kick_force = 37
 
         self.vel = vec(0,0)
         self.pos = vec(x,y)
@@ -606,7 +634,7 @@ class timebomb(Sprite):
 
     def explode(self):
         self.game.explosion_sound.play()
-        self.explosion_particle = Explosion(self.game,self.pos.x,self.pos.y)
+        self.explosion_particle = Explosion(self.game,self.rect.center[0],self.rect.center[1])
         kick(self.explosion_particle, self.game.ball, self.kick_force)
 
     def update(self):
@@ -645,7 +673,6 @@ class Explosion(Sprite):
         if self.timer.ready():
             self.kill()
         #lower opacity as time goes on
-        print(self.image.get_alpha())
         self.image.set_alpha(self.max_opacity*(self.timeleft/self.timer.time))
         
 
