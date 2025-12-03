@@ -147,6 +147,5 @@ class Game:
 if __name__ == "__main__":
     #   create instance of the Game class
     g = Game()
-    # while g.running:
     g.new()
     g.run()

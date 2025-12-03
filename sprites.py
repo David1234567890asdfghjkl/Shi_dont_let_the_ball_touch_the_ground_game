@@ -123,7 +123,7 @@ class Player(Sprite):
             #kick if the ball is close enough
             #update balls color, white if not kicking, red if kick but missed, blue is hit, green if ball can be hit(overrides blue) but code is elsewhere
             if calculatedist(self.rect.center,self.game.ball.rect.center)<self.range or calculatedist(self.rect.center,self.game.ball.rect.center) == self.range:
-                self.game.vine_boom.play()
+                self.game.vineboom_sound.play()
                 kick(self,self.game.ball,self.kick_force)
                 #start timer so ring can flash blue until done
                 self.hitflash.start()
@@ -310,8 +310,8 @@ class Ball(Sprite):
             self.rect.y = self.pos.y
 
     def dont_touch_ground(self):
-        if self.pos.y == self.ground or self.pos.y > self.ground.y:
-            self.kill
+        if self.rect.bottom == self.ground or self.rect.bottom > self.ground:
+            self.game.playing = False
 
     def update(self):
         self.collided_by_stuff()
@@ -391,7 +391,7 @@ class Bouncer(Sprite):
         self.rect = self.image.get_rect()
         self.kick_force = 14
         self.speed = 7
-        #die after 7 BOUNCES
+        #die after lifetimebounce BOUNCES
         self.lifetimebounces = 20
         # # of bounces left 
         self.bounces = self.lifetimebounces
@@ -597,11 +597,18 @@ class timebomb(Sprite):
         self.rect.y = self.pos.y
 
         self.timer = Cooldown(6000)
+        self.timeleft = self.timer.timertime
         self.timer.start()
+    def explode(self):
+        pass
     def update(self):
+        self.timeleft = self.timer.timertime-self.timer.time
+
         if self.timer.ready():
-            pass
+            self.kill()
         else:
-            self.game.draw_text(self.game.screen,str((self.timer.time-self.timer.timertime)/1000), 15, RED, self.rect.center[0],self.rect.y)
-            pg.display.flip()
+            #as time passes make bomb reder
+            #when 100% red time will have run out
+            self.color = ((self.timeleft/self.timer.timertime),(self.timer.time/self.timer.timertime),0)
+            pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
     
