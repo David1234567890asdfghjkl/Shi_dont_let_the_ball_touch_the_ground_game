@@ -291,15 +291,18 @@ class Ball(Sprite):
                 if hit.vel.x > 0:
                     #only if objects speed is higher or else ball collided with object
                     if hit.vel.x > self.vel.x:
+                        #change velocity
                         self.vel.x = hit.kick_force
+                        #put ball at the edge of the edge at which they collided so they are no longer colliding
                         self.rect.left = hit.rect.right
+                        #get self.pos in sync with self.rect
                         self.pos.x = self.rect.x
                 else:
                     if hit.vel.x < self.vel.x:
                         self.vel.x = -hit.kick_force
                         self.rect.right = hit.rect.left
                         self.pos.x = self.rect.x
-
+            #same as x for y
             if yhit == True:
                 if hit.vel.y > 0:
                     if hit.vel.y > self.vel.y:
@@ -319,24 +322,40 @@ class Ball(Sprite):
         if hits:
             if dir == 'x':
                 #check what direction ball is moving to adjust velocity and position accordingly
+                    #if colliding by ball going to the left, then the ball collided with the right side of the hit and vice versa
                 if self.vel.x > 0:
-                    #go to edge of hit so not colliding anymore
-                    self.rect.right = hits[0].rect.left
-                    self.pos.x = self.rect.x
+                    #if the hit is going in the direction of player go the hits velocity x to the left to avoid more collision
+                    if hits[0].vel.x < 0:
+                        self.rect.right = hits[0].rect.left+hits[0].vel.x
+                    else:
+                        #go to edge of hit so not colliding anymore
+                        self.rect.right = hits[0].rect.left
+
                 if self.vel.x < 0:
-                    self.rect.left = hits[0].rect.right
-                    self.pos.x = self.rect.x
+                    if hits[0].vel.x > 0:
+                        self.rect.left = hits[0].rect.right+hits[0].vel.x
+                    else:
+                        self.rect.left = hits[0].rect.right
+
+            #reverse velocity
             self.vel.x *= -1
+            #synce pos with rect
+            self.pos.x = self.rect.x
 
             if dir == 'y':
-                if self.vel.y > 0:
-                    self.rect.bottom = hits[0].rect.top
-                    self.pos.y = self.rect.y
+                if self.vel.y > 0: 
+                    if hits[0].vel.y<0:
+                        self.rect.bottom = hits[0].rect.top+hits[0].vel.y
+                    else:
+                        self.rect.bottom = hits[0].rect.top
+
                 if self.vel.y < 0:
-                    self.rect.top = hits[0].rect.bottom
-                    self.pos.y = self.rect.y
+                    if hits[0].vel.y>0:
+                        self.rect.top = hits[0].rect.bottom+hits[0].vel.y
+                    else:
+                        self.rect.top = hits[0].rect.bottom
             self.vel.y *= -1
-            self.rect.y = self.pos.y
+            self.pos.y = self.rect.y
 
     def dont_touch_ground(self):
         if self.rect.bottom == self.ground or self.rect.bottom > self.ground:
@@ -357,9 +376,9 @@ class Ball(Sprite):
         self.pos.y += self.vel.y
         
         self.rect.x = self.pos.x
-        #self.collide_with_stuff('x')
+        self.collide_with_stuff('x')
         self.rect.y = self.pos.y
-        #self.collide_with_stuff('y')
+        self.collide_with_stuff('y')
 
         #bounce off left and right wall, reverse vel x
         if self.rect.right == WIDTH or self.rect.right > WIDTH:
@@ -668,11 +687,13 @@ class Explosion(Sprite):
 
     def update(self):
         #copitlot helped with opacity
+        #set timeleft
         self.timeleft = self.timer.time - self.timer.timertime
         #when timer runs out kill particle
         if self.timer.ready():
             self.kill()
         #lower opacity as time goes on
+            #opacity will reach 0 when  timer finishes and particle dies
         self.image.set_alpha(self.max_opacity*(self.timeleft/self.timer.time))
         
 
