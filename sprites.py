@@ -504,8 +504,7 @@ class Bouncer(Sprite):
             self.kill()
         #change color based on bounces left before dying
         #print(self.color)
-        self.color = ((self.lifetimebounces-self.bounces)/self.lifetimebounces*255,0, (self.lifetimebounces-(self.lifetimebounces-self.bounces))/self.lifetimebounces*255)
-        #print(self.color)
+        self.color = gradient((self.lifetimebounces-self.bounces)/self.lifetimebounces,0,255,0,0,0,(self.lifetimebounces-self.bounces)/self.lifetimebounces,255,0)
         #fill so color updates
         self.image.fill(self.color)
     
@@ -631,7 +630,7 @@ class timebomb(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         #dimensions and characteristics
-        self.radius = 11
+        self.radius = 18
         self.diameter = int(self.radius*2)
         self.color = GREEN
         #SRCALPHA to make the surface not fill black
@@ -647,8 +646,12 @@ class timebomb(Sprite):
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
 
-        self.timer = Cooldown(6000)
-        self.timeleft = self.timer.time
+        #self.defused
+        self.defused = False
+
+        #when bomb will blow up
+            #if defused when bomb will dissapear
+        self.timer = Cooldown(11000)
         self.timer.start()
 
     def explode(self):
@@ -657,16 +660,29 @@ class timebomb(Sprite):
         kick(self.explosion_particle, self.game.ball, self.kick_force)
 
     def update(self):
-        self.timeleft = self.timer.time-self.timer.timertime
-        #when timer runs out explode and die
-        if self.timer.ready():
-            self.explode()
-            self.kill()
+        #defuse and turn bluewhen touched by ball
+        hits = pg.sprite.spritecollide(self,self.game.all_balls, False)
+        if hits:
+            self.color = BLUE
+            self.defused = True
+            #add new timer for when bomb self.kill() after defusal
+            self.timer = Cooldown(500)
+            self.timer.start()
+        
+        #only update bomb timer status and become redder if not defused
+        if self.defused == False:    
+            #when timer runs out explode and die
+            if self.timer.ready():
+                self.explode()
+                self.kill()
+            else:
+                #as time passes make bomb reder
+                #when 100% red time will have run out
+                self.color = gradient((self.timer.timertime/self.timer.time),0,255,(self.timer.timertime/self.timer.time),255,0)
         else:
-            #as time passes make bomb reder
-            #when 100% red time will have run out
-            self.color = ((self.timer.timertime/self.timer.time)*255,(self.timeleft/self.timer.time)*255,0)
-            pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
+            if self.timer.ready():
+                self.kill()
+        pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
     
 class Explosion(Sprite):
     def __init__(self, game, x, y):

@@ -81,10 +81,10 @@ class Game:
 
         w = Bouncer(self,True, 150,100 )
         w = Bouncer(self,True, 150,100 )
-        w = Bouncer(self,True, 150,100 )
-        w = Bouncer(self,True, 150,100 )
-        #eb = EvilBall(self)
-        #t = timebomb(self, 167,89)
+        #w = Bouncer(self,True, 150,100 )
+        #w = Bouncer(self,True, 150,100 )
+        eb = EvilBall(self)
+        t = timebomb(self, 167,89)
         #making walls right outside of screen so player cant walk off the screen into the void
         #2 walls l and r
         for walls in range(TILE_H):

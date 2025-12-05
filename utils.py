@@ -59,3 +59,7 @@ def kick(kicker,kicked,kick_scalar):
         #slope of line pointing to kicked
         #direction vector multiplied by kick force scalar
         kicker.game.ball.vel = direction * -kick_scalar
+
+#linear increase/decrease/nothing for each color value
+def gradient(ratior=0, beginr=0, finalr=0, ratiog=0, beging=0, finalg=0, ratiob=0, beginb=0, finalb=0):
+    return (ratior*(finalr-beginr)+beginr,beging+ratiog*(finalg-beging),beginb+ratiob*(finalb-beginb))
