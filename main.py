@@ -69,7 +69,9 @@ class Game:
             #generate multiple layer of walls depending on how thick floor should be
             for layer in range(3):
                 w = Wall(self, floortile, TILE_H-layer)
-
+        #like the mechanics of the game, fun
+        #wonder if you could make it so therees a pause menu after death
+        #felsh out menus
         
         #spawn player and ball in the middle of the screen
         self.player = Player(self,0,0)
@@ -78,13 +80,8 @@ class Game:
         self.player.pos = vec(self.player.rect.x,self.player.rect.y)
         self.ball.rect.center = (WIDTH/2,20)
         self.ball.pos = vec(self.ball.rect.x, self.ball.rect.y)
-
-        w = Bouncer(self,True, 150,100 )
-        w = Bouncer(self,True, 150,100 )
-        #w = Bouncer(self,True, 150,100 )
-        #w = Bouncer(self,True, 150,100 )
-        eb = EvilBall(self)
-        t = timebomb(self, 167,89)
+        #create spawn manager
+        self.spawner = SpawnManager(self)
         #making walls right outside of screen so player cant walk off the screen into the void
         #2 walls l and r
         for walls in range(TILE_H):
@@ -140,6 +137,7 @@ class Game:
         #if not self.win and not self.player.dead:
         self.time_display = pg.time.get_ticks()-self.start_time
         self.all_sprites.update()
+        self.spawner.spawn()
         # #making a timer
         # self.time = pg.time.get_ticks()//1000
         

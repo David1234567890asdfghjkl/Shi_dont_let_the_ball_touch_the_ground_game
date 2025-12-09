@@ -476,6 +476,7 @@ class Bouncer(Sprite):
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         if hits:
             self.rect.x -=self.vel.x
+            self.pos.x = self.rect.x
             self.vel.x *=-1
             self.bounces -=1
             
@@ -484,26 +485,27 @@ class Bouncer(Sprite):
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         if hits:
             self.rect.y -=self.vel.y
+            self.pos.y = self.rect.y
             self.vel.y *=-1
             self.bounces-=1
 
         if self.rect.right > WIDTH or self.rect.left < 0:
             self.rect.x-=self.vel.x
+            self.pos.x = self.rect.x
             self.vel.x *=-1
             self.bounces-=1
         if self.rect.top< 0 or self.rect.bottom > HEIGHT:
             self.rect.y-=self.vel.y
+            self.pos.y = self.rect.y
             self.vel.y *=-1
             self.bounces-=1
 
     def update(self):
         self.movement()
         #die if run out of bounces
-        #print(self.bounces)
         if self.bounces <= 0:
             self.kill()
         #change color based on bounces left before dying
-        #print(self.color)
         self.color = gradient((self.lifetimebounces-self.bounces)/self.lifetimebounces,0,255,0,0,0,(self.lifetimebounces-self.bounces)/self.lifetimebounces,255,0)
         #fill so color updates
         self.image.fill(self.color)
@@ -713,3 +715,75 @@ class Explosion(Sprite):
         self.image.set_alpha(self.max_opacity*(self.timeleft/self.timer.time))
         
 
+#this class manages all spawning of enemy objects
+class SpawnManager():
+    def __init__(self,game):
+        self.game = game
+
+        #get time of creation
+        self.start_time = pg.time.get_ticks()
+        #how much time the spawnManager has been alive
+        self.time_alive = pg.time.get_ticks() - self.start_time
+
+        #max spawn chance is 0.5 of original chance
+        self.max_spawn_chance = 0.5
+        #10 minutes to reach max spawn chance
+        self.max_chance_time = 6000
+
+        #chance of spawning a [blank] is 1 in [blank]_chance ticks
+        self.Bouncer_chance = 6000
+        self.Timebomb_chance = 9000
+        #list says all the sprites to spawn, each list is 
+        #what to spawn
+        #arguments
+        #1/x chance of spawning(will not be mutabled)
+        #1/x chance of spawning (will be mutabled)
+        #after x ticks, it can spawn
+        self.spawn_list = [[Bouncer,(self.game,True),self.Bouncer_chance,self.Bouncer_chance,0],[timebomb,(self.game, random.randint(0,WIDTH),random.randint(45,410)),self.Timebomb_chance,self.Timebomb_chance, 10000]]
+
+        #for spawning things once
+        self.hasrun_1 = False
+        self.hasrun_2 = False
+
+    def spawn(self):
+        self.time_alive = pg.time.get_ticks() - self.start_time
+        #update time alive
+
+        for i in range(len(self.spawn_list)):
+            #self.spawn_list[i][2] is the original spawn chance
+            #self.spawn_list[i][3] is the spawn chacne
+            #self.spawn_list[i][4] is the time after which the obejct can spawn
+            ORIGINAL_SPAWN_CHANCE=self.spawn_list[i][3]
+            spawn_chance = self.spawn_list[i][2]
+            SPAWN_START_TIME = self.spawn_list[i][4]
+
+            object = self.spawn_list[i][0]
+            object_args = self.spawn_list[i][1]
+
+            #check if enough time has passed to spawn object
+            if self.time_alive > SPAWN_START_TIME:
+                #spawn chance decreases over time and plateus
+                if self.time_alive > self.max_chance_time:
+                    spawn_chance = ORIGINAL_SPAWN_CHANCE*self.max_spawn_chance
+                else:
+                    #decrease spawn chance linearly over time
+                    spawn_chance = linear((self.time_alive-SPAWN_START_TIME)/self.max_chance_time, ORIGINAL_SPAWN_CHANCE, ORIGINAL_SPAWN_CHANCE*self.max_spawn_chance)
+                #1/[blank]_chance chance to spawn [blank]
+                if random.randint(1,int(self.spawn_list[i][2]/FPS)) == 2:
+                    #spawn the object
+                    #github copilot helped with the unpacking of arguments
+                    self.game.object = object(*object_args)
+        print(self.time_alive)
+        print(self.spawn_list[1][2])
+        self.spawnonce()
+
+    def spawnonce(self):
+        #spawn a bouncer after some seconds
+        if self.time_alive > 3000 and not self.hasrun_1:
+            object = Bouncer(self.game,True)
+            self.hasrun_1 = True
+
+        #after some seconds spawn evil ball
+        if self.time_alive > 15000 and not self.hasrun_2:
+            object = EvilBall(self.game)
+            self.hasrun_2 = True

@@ -44,12 +44,6 @@ class Cooldown:
 def calculatedist(co1,co2):
     return math.sqrt((co1[0]-co2[0])**2+(co1[1]-co2[1])**2)
 
-#this class manages all spawning of enemy psirtes
-class SpawnManager():
-    def __init__(self):
-        #list says all the sprites to spawn
-        self.spawn_list = []
-
 def kick(kicker,kicked,kick_scalar):
         #get direction to kick the kicked by getting the difference between coords of player and ball
             #kick ball in direction directly away from kicker
@@ -63,3 +57,6 @@ def kick(kicker,kicked,kick_scalar):
 #linear increase/decrease/nothing for each color value
 def gradient(ratior=0, beginr=0, finalr=0, ratiog=0, beging=0, finalg=0, ratiob=0, beginb=0, finalb=0):
     return (ratior*(finalr-beginr)+beginr,beging+ratiog*(finalg-beging),beginb+ratiob*(finalb-beginb))
+
+def linear(ratio=0, begin=0, final=0):
+    return (ratio*(final-begin)+begin)
