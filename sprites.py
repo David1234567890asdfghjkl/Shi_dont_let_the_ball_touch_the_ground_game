@@ -17,7 +17,6 @@ class Player(Sprite):
         self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
         #drawing player
-        self.dead = False
         self.game = game
         self.image = self.game.player_img
         #make image the player png
@@ -177,8 +176,7 @@ class Player(Sprite):
         #get key presses
         self.get_keys()
         #only move if not dead
-        if not self.dead:
-            self.pos += self.vel
+        self.pos += self.vel
         self.rect.x = self.pos.x
         self.collide_with_walls('x')
         self.rect.y = self.pos.y
@@ -359,7 +357,7 @@ class Ball(Sprite):
 
     def dont_touch_ground(self):
         if self.rect.bottom == self.ground or self.rect.bottom > self.ground:
-            self.game.playing = False
+            self.game.lose = True
 
     def update(self):
         self.collided_by_stuff()
@@ -440,7 +438,7 @@ class Bouncer(Sprite):
         self.kick_force = 14
         self.speed = 7
         #die after lifetimebounce BOUNCES
-        self.lifetimebounces = 20
+        self.lifetimebounces = 5
         # # of bounces left 
         self.bounces = self.lifetimebounces
 
@@ -727,12 +725,12 @@ class SpawnManager():
 
         #max spawn chance is 0.5 of original chance
         self.max_spawn_chance = 0.5
-        #10 minutes to reach max spawn chance
-        self.max_chance_time = 6000
+        #some minutes to reach max spawn chance
+        self.max_chance_time = 30000
 
         #chance of spawning a [blank] is 1 in [blank]_chance ticks
-        self.Bouncer_chance = 6000
-        self.Timebomb_chance = 9000
+        self.Bouncer_chance = 7000
+        self.Timebomb_chance = 11000
         #list says all the sprites to spawn, each list is 
         #what to spawn
         #arguments
@@ -744,6 +742,7 @@ class SpawnManager():
         #for spawning things once
         self.hasrun_1 = False
         self.hasrun_2 = False
+        self.hasrun_3 = False
 
     def spawn(self):
         self.time_alive = pg.time.get_ticks() - self.start_time
@@ -783,7 +782,11 @@ class SpawnManager():
             object = Bouncer(self.game,True)
             self.hasrun_1 = True
 
-        #after some seconds spawn evil ball
-        if self.time_alive > 15000 and not self.hasrun_2:
-            object = EvilBall(self.game)
+        if self.time_alive > 10000 and not self.hasrun_2:
+            object = timebomb(self.spawnlist[1][1])
             self.hasrun_2 = True
+
+        #after some seconds spawn evil ball
+        if self.time_alive > 24000 and not self.hasrun_3:
+            object = EvilBall(self.game)
+            self.hasrun_3 = True
