@@ -41,13 +41,22 @@ class Game:
         #load sounds
         self.explosion_sound = pg.mixer.Sound(path.join(self.snd_folder,'explosion.mp3'))
         self.vineboom_sound = pg.mixer.Sound(path.join(self.snd_folder,'vine_boom.mp3'))
+        self.defuse_sound = pg.mixer.Sound(path.join(self.snd_folder,'defuse.mp3'))
+        self.click_sound = pg.mixer.Sound(path.join(self.snd_folder,'click.mp3'))
+        self.ding_sound = pg.mixer.Sound(path.join(self.snd_folder,'ding.mp3'))
         #music
         #posted by DERER1 on youtube
-        self.loading_music = pg.mixer.Sound(path.join(self.snd_folder,'LoadingScreenMusicDERER1.mp3'))
+        self.loading_music = path.join(self.snd_folder,'LoadingScreenThemeDERER1.mp3')
+        self.theme = path.join(self.snd_folder,'Splashing Around.mp3')
+        self.tick_sound = path.join(self.snd_folder,'tick.mp3')
         #loads images from images folder when load date is called
 
 
     def new(self):
+        #loop music
+        pg.mixer.music.load(self.theme)
+        pg.mixer.music.play(loops=-1)
+
         self.dt = self.clock.tick(FPS) / 10000
         # keep loop running at the right speed
         # the sprite Group allows us to upate and draw sprite in grouped batches
@@ -94,6 +103,7 @@ class Game:
     
     #wait for keys and show start screen from https://github.com/ccozort/cozort__tower_of_the_apprentice/commit/f27da30a4eabff79c09ceddfe41cdcc39321038f#diff-b10564ab7d2c520cdd0243874879fb0a782862c3c902ab535faabe57d5a505e1R140-R142
     def wait_for_key(self):
+        #wait for keys and when key pressed, break while loop to continue
         waiting = True
         while waiting:
             self.clock.tick(FPS)
@@ -104,8 +114,9 @@ class Game:
                 if event.type == pg.KEYUP:
                     waiting = False
     def show_start_screen(self):
+        #wait for a key press and then start game
         #game splash/start screen
-        pg.mixer.music.load()
+        pg.mixer.music.load(self.loading_music)
         pg.mixer.music.play(loops=-1)
         self.screen.fill(BLACK)
         self.draw_text(self.screen,"PRESS A KEY TO START", 48, WHITE, WIDTH / 2, HEIGHT / 4)
@@ -120,7 +131,11 @@ class Game:
             # input
             self.events()
             # process=-
-            self.update()
+            if not self.lose:
+                self.update()
+            else:
+                #play ding if lose
+                pg.mixer.Sound.play(self.ding_sound)
             # output
             self.draw()
         pg.quit()
@@ -148,6 +163,7 @@ class Game:
         if self.lose:
             self.draw_text(self.screen,"you did let the ball touch the ground", 20, WHITE, WIDTH/2, HEIGHT/2)
             self.draw_text(self.screen,str(self.time_display/1000), 15, WHITE, WIDTH/2, HEIGHT/2+20)
+        self.draw_text(self.screen,str(self.spawner.spawn_list[0][3]), 10, WHITE, WIDTH/2, HEIGHT/2+20)
         pg.display.flip()
 
     def update(self):
@@ -164,5 +180,8 @@ class Game:
 if __name__ == "__main__":
     #   create instance of the Game class
     g = Game()
-    g.new()
-    g.run()
+    g.load_data()
+    g.show_start_screen()
+    while g.running:
+        g.new()
+        g.run()
