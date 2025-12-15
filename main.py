@@ -51,11 +51,17 @@ class Game:
         self.tick_sound = path.join(self.snd_folder,'tick.mp3')
         #loads images from images folder when load date is called
 
-
-    def new(self):
+    def play_theme(self):
         #loop music
         pg.mixer.music.load(self.theme)
         pg.mixer.music.play(loops=-1)
+
+    def new(self):
+        #play theme usic 
+        self.play_theme()
+
+        self.playing = True
+        self.lose = False
 
         self.dt = self.clock.tick(FPS) / 10000
         # keep loop running at the right speed
@@ -105,22 +111,59 @@ class Game:
     def wait_for_key(self):
         #wait for keys and when key pressed, break while loop to continue
         waiting = True
+        #set timer help from copilot to flash text on and off
+        show_text = pg.USEREVENT + 1
+        pg.time.set_timer(show_text, 500)
+        #tell whether to show text or to black out text
+        self.flash = True
         while waiting:
             self.clock.tick(FPS)
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     waiting = False
                     self.running = False
+                #break loop if key pressed
                 if event.type == pg.KEYUP:
                     waiting = False
+                if event.type == show_text:
+                    #show text on and off by showing text every other event and blackng out every other event
+                    if self.flash == True:
+                        self.draw_text(self.screen,"PRESS ANY KEY TO START", 40, WHITE, WIDTH / 2, HEIGHT / 4)
+                        pg.display.flip()
+                        self.flash = False
+                    else:
+                        self.flash = True
+                        self.screen.fill(BLACK)
+                        pg.display.flip()
+    
+    #more flexible wait for key press function, used for death screen
+    def wait_for_key_press(self, grace_period = 0):
+        #wait for keys and when key pressed, break while loop to continue
+        waiting = True
+        #active is whether key presses will be registered or not, gives a grace period for death screen restart
+        active = False
+        start_time = pg.time.get_ticks()
+        while waiting:
+            #register key presses after 500ms
+            if pg.time.get_ticks() - start_time > grace_period:
+                active = True
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    waiting = False
+                    self.running = False
+                if active == True:
+                    #break loop if key pressed
+                    if event.type == pg.KEYUP:
+                        waiting = False
+
     def show_start_screen(self):
+        self.screen.fill(BLACK)
+        self.draw_text(self.screen,"PRESS ANY KEY TO START", 40, WHITE, WIDTH / 2, HEIGHT / 4)
+        pg.display.flip()
         #wait for a key press and then start game
         #game splash/start screen
         pg.mixer.music.load(self.loading_music)
         pg.mixer.music.play(loops=-1)
-        self.screen.fill(BLACK)
-        self.draw_text(self.screen,"PRESS A KEY TO START", 48, WHITE, WIDTH / 2, HEIGHT / 4)
-        pg.display.flip()
         self.wait_for_key()
         pg.mixer.music.fadeout(500)
 
@@ -138,7 +181,6 @@ class Game:
                 pg.mixer.Sound.play(self.ding_sound)
             # output
             self.draw()
-        pg.quit()
 
     def events(self):
         for event in pg.event.get():
@@ -162,8 +204,8 @@ class Game:
         #display text and time when win
         if self.lose:
             self.draw_text(self.screen,"you did let the ball touch the ground", 20, WHITE, WIDTH/2, HEIGHT/2)
+            self.draw_text(self.screen,"press any key TO CONTINUE", 15, WHITE, WIDTH/2, HEIGHT/2+35)
             self.draw_text(self.screen,str(self.time_display/1000), 15, WHITE, WIDTH/2, HEIGHT/2+20)
-        self.draw_text(self.screen,str(self.spawner.spawn_list[0][3]), 10, WHITE, WIDTH/2, HEIGHT/2+20)
         pg.display.flip()
 
     def update(self):
@@ -185,3 +227,9 @@ if __name__ == "__main__":
     while g.running:
         g.new()
         g.run()
+        #run() loop breaks when ball touches ground because self.playing == False
+        if g.running == True:
+            #wait for key press during death screen
+            g.wait_for_key_press(500)
+            #show start screen again after key press
+            g.show_start_screen()

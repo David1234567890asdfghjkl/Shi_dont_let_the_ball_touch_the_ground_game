@@ -360,6 +360,7 @@ class Ball(Sprite):
     def dont_touch_ground(self):
         if self.rect.bottom == self.ground or self.rect.bottom > self.ground:
             self.game.lose = True
+            self.game.playing = False
 
     def update(self):
         self.collided_by_stuff()
@@ -435,7 +436,7 @@ class Bouncer(Sprite):
         self.vel = vec(0,0)
         self.pos = vec(x,y)
         self.game = game
-        self.image = pg.Surface((40,40))
+        self.image = pg.Surface((34,34))
         self.rect = self.image.get_rect()
         self.kick_force = 14
         self.speed = 7
@@ -663,11 +664,13 @@ class timebomb(Sprite):
         self.game.explosion_sound.play()
         self.explosion_particle = Explosion(self.game,self.rect.center[0],self.rect.center[1])
         kick(self.explosion_particle, self.game.ball, self.kick_force)
+        self.game.play_theme()
 
     def update(self):
         #defuse and turn bluewhen touched by ball
         hits = pg.sprite.spritecollide(self,self.game.all_balls, False)
         if hits:
+            self.game.play_theme()
             #play defuse sound
             pg.mixer.Sound.play(self.game.defuse_sound)
             self.color = BLUE
@@ -681,7 +684,6 @@ class timebomb(Sprite):
             #when timer runs out explode and die
             if self.timer.ready():
                 #stop ticking sound
-                self.mixer.music.stop()
                 self.explode()
                 self.kill()
             else:
@@ -752,7 +754,7 @@ class SpawnManager():
         #[][0] is what to spawn
         #[][1] is arguments
         #[][2] is when to spawn
-        self.spawnonce_list = [[Bouncer,(self.game,True),1000],[Bouncer,(self.game,True),3000],[timebomb, self.spawn_list[1][1],8000],[EvilBall,(self.game),24000]]
+        self.spawnonce_list = [[Bouncer,(self.game,True),1000],[Bouncer,(self.game,True),3000],[timebomb, self.spawn_list[1][1],2000],[EvilBall,(self.game),24000]]
         #list of hasrun variables for spawnonce
         self.hasrun = []
         for i in range(len(self.spawnonce_list)):
