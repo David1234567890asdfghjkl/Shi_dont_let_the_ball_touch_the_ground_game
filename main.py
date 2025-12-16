@@ -1,4 +1,9 @@
 #Some code from https://bcpsj-my.sharepoint.com/personal/ccozort_bcp_org/_layouts/15/onedrive.aspx?ga=1&id=%2Fpersonal%2Fccozort%5Fbcp%5Forg%2FDocuments%2FDocuments%2F000%5FComputer%5FProgramming%2F2025%5F2026%5FFall%2Fclass%5Fcode%2Fmy%5Fgame%2Fmain%2Epy&parent=%2Fpersonal%2Fccozort%5Fbcp%5Forg%2FDocuments%2FDocuments%2F000%5FComputer%5FProgramming%2F2025%5F2026%5FFall%2Fclass%5Fcode%2Fmy%5Fgame
+#sound effects from https://www.myinstants.com/en/index/us/
+#theme music from https://www.youtube.com/watch?v=LDGZAprNGWo
+#loading music from https://www.youtube.com/watch?v=8mczzifNRc0
+#draw circle
+#https://www.pygame.org/docs/ref/draw.html#pygame.draw.circle
 #David Shi
 #import necessary modules
 #core game loop
@@ -60,6 +65,7 @@ class Game:
         #play theme usic 
         self.play_theme()
 
+        #reset flags
         self.playing = True
         self.lose = False
 
@@ -87,15 +93,13 @@ class Game:
             #generate multiple layer of walls depending on how thick floor should be
             for layer in range(3):
                 w = Wall(self, floortile, TILE_H-layer)
-        #like the mechanics of the game, fun
-        #wonder if you could make it so therees a pause menu after death
-        #felsh out menus
         
         #spawn player and ball in the middle of the screen
         self.player = Player(self,0,0)
-        self.ball = Ball(self,0,0)
         self.player.rect.center = (WIDTH/2,300)
         self.player.pos = vec(self.player.rect.x,self.player.rect.y)
+        
+        self.ball = Ball(self,0,0)
         self.ball.rect.center = (WIDTH/2,20)
         self.ball.pos = vec(self.ball.rect.x, self.ball.rect.y)
         #create spawn manager
@@ -119,16 +123,19 @@ class Game:
         while waiting:
             self.clock.tick(FPS)
             for event in pg.event.get():
-                if event.type == pg.QUIT:
+                #so when window is closed during the wait_for_key_press, dont have to put any input to get out of loop and close windwos
+                if self.running == False:
                     waiting = False
+                if event.type == pg.QUIT:
                     self.running = False
+                    waiting = False
                 #break loop if key pressed
                 if event.type == pg.KEYUP:
                     waiting = False
                 if event.type == show_text:
                     #show text on and off by showing text every other event and blackng out every other event
                     if self.flash == True:
-                        self.draw_text(self.screen,"PRESS ANY KEY TO START", 40, WHITE, WIDTH / 2, HEIGHT / 4)
+                        self.draw_text(self.screen,"PRESS ANY KEY TO START", 34, WHITE, WIDTH / 2, HEIGHT /3)
                         pg.display.flip()
                         self.flash = False
                     else:
@@ -158,7 +165,6 @@ class Game:
 
     def show_start_screen(self):
         self.screen.fill(BLACK)
-        self.draw_text(self.screen,"PRESS ANY KEY TO START", 40, WHITE, WIDTH / 2, HEIGHT / 4)
         pg.display.flip()
         #wait for a key press and then start game
         #game splash/start screen
@@ -183,9 +189,11 @@ class Game:
             self.draw()
 
     def events(self):
+        #check for quit event 
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.playing = False
+                self.running = False
 
     def draw_text(self, surface, text, size, color, x, y):
         font_name = pg.font.match_font('arial')

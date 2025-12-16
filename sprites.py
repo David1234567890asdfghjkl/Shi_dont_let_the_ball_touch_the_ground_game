@@ -27,14 +27,14 @@ class Player(Sprite):
         self.vel=vec(0,0)
         self.pos=vec(x,y)
         #max horizontal_speed, movement key in same direction will no longer accelerate
-        self.max_horizontal_speed = 9
+        self.max_horizontal_speed = 11
         self.max_fall_speed = 26
         #amount vel x will decrease when keys not touched
         self.deaccel = 0.5
         #how many double jumps player will get when touching floor
-        self.extra_jumps = 2
+        self.extra_jumps = 3
         #how many double jumps player currently has
-        self.jumps = 2
+        self.jumps = self.extra_jumps
         #cooldown so jump doesnt trigger multiple times when w pressed to prevent double jumping 
         self.jump_cd = Cooldown(420)
         #jump power
@@ -438,8 +438,8 @@ class Bouncer(Sprite):
         self.game = game
         self.image = pg.Surface((34,34))
         self.rect = self.image.get_rect()
-        self.kick_force = 14
-        self.speed = 7
+        self.kick_force = 10
+        self.speed = 5
         #die after lifetimebounce BOUNCES
         self.lifetimebounces = 15
         # # of bounces left 
@@ -472,34 +472,73 @@ class Bouncer(Sprite):
     def movement(self):
         # bounce off walls and screen borders
         #bouncing decreases lifetime by decreasing self.bounces
+
+        #update x position based on velocity
         self.pos.x +=self.vel.x
+        #sync rect with pos
         self.rect.x = self.pos.x
+        #check for collision
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         if hits:
+            if self.vel.x > 0:
+                #make collided edge rect edge to avoid collision again
+                self.rect.right = hits[0].rect.left
+            if self.vel.x < 0:
+                self.rect.left = hits[0].rect.right
+
+            #reverse tick's velocity to avoid further collision
             self.rect.x -=self.vel.x
+            #sync pos with rect
             self.pos.x = self.rect.x
+            #reverse velocity to bounce
             self.vel.x *=-1
+            #decrease bounces left
             self.bounces -=1
             
+        #same but for voliding with screen borders
+        if self.rect.right > WIDTH:
+            #add edge to rect to avoid collision
+            self.rect.right = WIDTH
+            self.rect.x-=self.vel.x
+            self.pos.x = self.rect.x
+            self.vel.x *=-1
+            self.bounces-=1
+        #same thing
+        if self.rect.left < 0:
+            self.rect.left = 0
+            self.rect.x-=self.vel.x
+            self.pos.x = self.rect.x
+            self.vel.x *=-1
+            self.bounces-=1
+
+        #same but w/y
         self.pos.y += self.vel.y
         self.rect.y = self.pos.y
+        
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         if hits:
+            if self.vel.y > 0:
+                self.rect.bottom = hits[0].rect.top
+            if self.vel.y < 0:
+                self.rect.top = hits[0].rect.bottom
             self.rect.y -=self.vel.y
             self.pos.y = self.rect.y
             self.vel.y *=-1
             self.bounces-=1
 
-        if self.rect.right > WIDTH or self.rect.left < 0:
-            self.rect.x-=self.vel.x
-            self.pos.x = self.rect.x
-            self.vel.x *=-1
-            self.bounces-=1
-        if self.rect.top< 0 or self.rect.bottom > HEIGHT:
-            self.rect.y-=self.vel.y
+        
+        if self.rect.top< 0:
+            self.rect.top = 0
+            self.rect.y -= self.vel.y
             self.pos.y = self.rect.y
             self.vel.y *=-1
             self.bounces-=1
+        if self.rect.bottom > HEIGHT:
+            self.rect.bottom = HEIGHT
+            self.rect.y -= self.vel.y
+            self.pos.y = self.rect.y
+            self.vel.y *= -1
+            self.bounces -= 1
 
     def update(self):
         self.movement()
@@ -508,9 +547,22 @@ class Bouncer(Sprite):
             self.kill()
         #change color based on bounces left before dying
         self.color = gradient((self.lifetimebounces-self.bounces)/self.lifetimebounces,0,255,0,0,0,(self.lifetimebounces-self.bounces)/self.lifetimebounces,255,0)
+        
+        #check if any color values are out of range and will produce errors
+            #kill if color will produce error
+        color_valid = True
+        for i in range(3):
+            if self.color[i] < 0:
+                color_valid = False
+            if self.color[i] > 255:
+                color_valid = False
+                
         #fill so color updates
-        self.image.fill(self.color)
-    
+        if color_valid == True:
+            self.image.fill(self.color)
+        else:
+            self.kill()
+
     #evil ball will follow the path of the ball
     #evilballpositioner creates a list with all the positions of the ball during its life
         #so when the evil ball starts updating which is after the positioner dies, it can go to the previous positions of the ball
@@ -590,7 +642,7 @@ class EvilBall(Sprite):
         self.rect = self.image.get_rect()
         
         #how many frames the ball will delay when following the balls path
-        self.framedelay = 15
+        self.framedelay = 24
         #list to track positions of ball, will be gotten from positioner when it dies
         self.ballpositions = []
 
@@ -648,42 +700,48 @@ class timebomb(Sprite):
         self.pos = vec(x,y)
         self.rect.x = self.pos.x
         self.rect.y = self.pos.y
-
+        
         #self.defused
         self.defused = False
-
+        #play tick sounds
+        pg.mixer.music.load(self.game.tick_sound)
+        pg.mixer.music.play(loops=-1)
         #when bomb will blow up
             #if defused when bomb will dissapear
         self.timer = Cooldown(11000)
         self.timer.start()
-        #start ticking sound
-        pg.mixer.music.load(self.game.tick_sound)
-        pg.mixer.music.play(loops=-1)
+
+        #cooldown for when to die after defused
+        self.defused_timer = Cooldown(500)
 
     def explode(self):
         self.game.explosion_sound.play()
         self.explosion_particle = Explosion(self.game,self.rect.center[0],self.rect.center[1])
         kick(self.explosion_particle, self.game.ball, self.kick_force)
+        pg.mixer_music.stop()
+        pg.mixer_music.unload()
         self.game.play_theme()
 
     def update(self):
         #defuse and turn bluewhen touched by ball
         hits = pg.sprite.spritecollide(self,self.game.all_balls, False)
         if hits:
+            pg.mixer_music.stop()
+            pg.mixer_music.unload()
             self.game.play_theme()
             #play defuse sound
-            pg.mixer.Sound.play(self.game.defuse_sound)
+                #only once 
+            if self.defused == False:
+                pg.mixer.Sound.play(self.game.defuse_sound)
             self.color = BLUE
             self.defused = True
-            #add new timer for when bomb self.kill() after defusal
-            self.timer = Cooldown(500)
-            self.timer.start()
+            #start defuse timer
+            self.defused_timer.start()
         
         #only update bomb timer status and become redder if not defused
         if self.defused == False:    
             #when timer runs out explode and die
             if self.timer.ready():
-                #stop ticking sound
                 self.explode()
                 self.kill()
             else:
@@ -691,8 +749,9 @@ class timebomb(Sprite):
                 #when 100% red time will have run out
                 self.color = gradient((self.timer.timertime/self.timer.time),0,255,(self.timer.timertime/self.timer.time),255,0)
         else:
-            if self.timer.ready():
+            if self.defused_timer.ready():
                 self.kill()
+
         pg.draw.circle(self.image, self.color, (self.radius,self.radius), self.radius)
     
 class Explosion(Sprite):
@@ -735,32 +794,44 @@ class SpawnManager():
         self.time_alive = pg.time.get_ticks() - self.start_time
 
         #max spawn chance is 0.5 of original chance
-        self.max_spawn_chance = 0.4
+        self.max_spawn_chance = 0.6
         #some minutes to reach max spawn chance
-        self.max_chance_time = 300000
+        self.max_chance_time = 600000
 
         #chance of spawning a [blank] is 1 in [blank]_chance ticks
-        self.Bouncer_chance = 12000
-        self.Timebomb_chance = 11000
+        self.Bouncer_chance = 9000
+        self.Timebomb_chance = 12000
+        
+        #define spawns
+        #will create the list of spawns
+        self.define_spawns()
+
+        #for spawning things once
+        #[][0] is what to spawn
+        #[][1] is arguments
+        #[][2] is when to spawn
+        #evil ball parameters are a list to make arguments iterable
+        self.spawnonce_list = [[Bouncer,(self.game,True),1000],[Bouncer,(self.game,True),3000],[timebomb, self.spawn_list[1][1],4000],[EvilBall,[self.game],24000]]
+        #list of hasrun variables for spawnonce
+        self.hasrun = []
+        for i in range(len(self.spawnonce_list)):
+            self.hasrun.append(False)
+
+    #this list is to deifne all the spawns, it is a method so it can randomize te spawn locations
+    def define_spawns(self):
         #list says all the sprites to spawn, each list is 
         #what to spawn
         #arguments
         #1/x chance of spawning(will not be mutabled)
         #1/x chance of spawning (will be mutabled)
         #after x ticks, it can spawn
-        self.spawn_list = [[Bouncer,(self.game,True),self.Bouncer_chance,self.Bouncer_chance,0],[timebomb,(self.game, random.randint(0,WIDTH),random.randint(45,410)),self.Timebomb_chance,self.Timebomb_chance, 10000]]
+        self.spawn_list = [[Bouncer,(self.game,True),self.Bouncer_chance,self.Bouncer_chance,0],[timebomb,(self.game, random.randint(20,WIDTH-20),random.randint(20,HEIGHT-190)),self.Timebomb_chance,self.Timebomb_chance, 10000]]
 
-        #for spawning things once
-        #[][0] is what to spawn
-        #[][1] is arguments
-        #[][2] is when to spawn
-        self.spawnonce_list = [[Bouncer,(self.game,True),1000],[Bouncer,(self.game,True),3000],[timebomb, self.spawn_list[1][1],2000],[EvilBall,(self.game),24000]]
-        #list of hasrun variables for spawnonce
-        self.hasrun = []
-        for i in range(len(self.spawnonce_list)):
-            self.hasrun.append(False)
 
     def spawn(self):
+        #update spawn list to randomize spawn locations
+        self.define_spawns()
+
         self.time_alive = pg.time.get_ticks() - self.start_time
         #update time alive
 
@@ -789,6 +860,7 @@ class SpawnManager():
                     #spawn the object
                     #github copilot helped with the unpacking of arguments
                     self.game.object = object(*object_args)
+
         self.spawnonce()
 
     def spawnonce(self):
