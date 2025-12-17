@@ -4,6 +4,17 @@
 #loading music from https://www.youtube.com/watch?v=8mczzifNRc0
 #draw circle
 #https://www.pygame.org/docs/ref/draw.html#pygame.draw.circle
+#normalize and other vector stutf
+#https://www.pygame.org/docs/ref/math.html?highlight=vector#pygame.math.Vector2
+#rect and images
+#https://www.pygame.org/docs/ref/rect.html
+#copilot ai for explaining different stuff and debugging
+#https://copilot.microsoft.com/
+#set timer
+#https://www.pygame.org/docs/ref/time.html?highlight=set_timer#pygame.time.set_timer
+#pygame.mixermusic 
+#https://www.pygame.org/docs/ref/music.html?highlight=music
+
 #David Shi
 #import necessary modules
 #core game loop
@@ -95,13 +106,14 @@ class Game:
                 w = Wall(self, floortile, TILE_H-layer)
         
         #spawn player and ball in the middle of the screen
+        self.ball = Ball(self,0,0)
+        self.ball.rect.center = (WIDTH/2,20)
+        self.ball.pos = vec(self.ball.rect.x, self.ball.rect.y)
+
         self.player = Player(self,0,0)
         self.player.rect.center = (WIDTH/2,300)
         self.player.pos = vec(self.player.rect.x,self.player.rect.y)
         
-        self.ball = Ball(self,0,0)
-        self.ball.rect.center = (WIDTH/2,20)
-        self.ball.pos = vec(self.ball.rect.x, self.ball.rect.y)
         #create spawn manager
         self.spawner = SpawnManager(self)
         #making walls right outside of screen so player cant walk off the screen into the void
@@ -136,12 +148,19 @@ class Game:
                     #show text on and off by showing text every other event and blackng out every other event
                     if self.flash == True:
                         self.draw_text(self.screen,"PRESS ANY KEY TO START", 34, WHITE, WIDTH / 2, HEIGHT /3)
-                        pg.display.flip()
                         self.flash = False
                     else:
                         self.flash = True
                         self.screen.fill(BLACK)
                         pg.display.flip()
+                    #always show controls
+                    self.draw_text(self.screen,"Controls:", 17, WHITE, WIDTH / 2, HEIGHT /3+70)
+                    self.draw_text(self.screen,"a,d to move", 15, WHITE, WIDTH / 2, HEIGHT /3+95)
+                    self.draw_text(self.screen,"w to jump", 15, WHITE, WIDTH / 2, HEIGHT /3+120)
+                    self.draw_text(self.screen,"press space to kick(you can hold space)", 15, WHITE, WIDTH / 2, HEIGHT /3+145)
+                    self.draw_text(self.screen,"lshift to fall slower", 15, WHITE, WIDTH / 2, HEIGHT /3+170)
+                    self.draw_text(self.screen,"s to fall faster", 15, WHITE, WIDTH / 2, HEIGHT /3+195)
+                    pg.display.flip()
     
     #more flexible wait for key press function, used for death screen
     def wait_for_key_press(self, grace_period = 0):

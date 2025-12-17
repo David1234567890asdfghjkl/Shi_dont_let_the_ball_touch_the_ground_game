@@ -47,12 +47,15 @@ class Player(Sprite):
         self.fall_speed = 0.7
         #how close player has to be to  to kick
         self.range = 40
+        #create ring around player
+        self.ring = Ring(self.game, self, self.range)
+        #increase range so player can kick ball even if the ball is touching the ring but the balls center is not close
+        self.range = self.range + self.game.ball.radius
         #when kicked, how fast hte ball will go
-        self.kick_force = 13
+        self.kick_force = 12
         self.cd = Cooldown(150)
         #is player touching ground
         self.touching_ground = False
-        self.ring = Ring(self.game, self, self.range)
         #time that ring will flash when successfully kicking
         self.hitflash = Cooldown(150)
 
@@ -77,6 +80,13 @@ class Player(Sprite):
     
 
     def get_keys(self):
+        #CONTROLS
+        #w jump
+        #ad left and right
+        #space to kick the ball
+        #lshift to fall slower
+        #s to fall faster
+
         #gravity acceleration if not reached max fall speed
         if self.vel.y < self.max_fall_speed:
             self.vel.y += GRAVITY
@@ -213,7 +223,7 @@ class Ball(Sprite):
         Sprite.__init__(self, self.groups)
         self.game = game
         #gravity multiplier so it falls slower
-        self.gravitymultiplier = 0.4
+        self.gravitymultiplier = 0.35
         #dimensions and characteristics
         self.radius = 8
         self.diameter = int(self.radius*2)
@@ -222,7 +232,7 @@ class Ball(Sprite):
             #y_decrease = drag coefficient * speed
         self.drag_multiplier = 0.02
         #terminal velocity is maximum downward speed
-        self.terminal_velocity = 3
+        self.terminal_velocity = 2.5
         #velocity
         self.vel = vec(0,0)
         #position(not actual rect pos)
@@ -642,7 +652,7 @@ class EvilBall(Sprite):
         self.rect = self.image.get_rect()
         
         #how many frames the ball will delay when following the balls path
-        self.framedelay = 24
+        self.framedelay = 32
         #list to track positions of ball, will be gotten from positioner when it dies
         self.ballpositions = []
 
@@ -799,7 +809,7 @@ class SpawnManager():
         self.max_chance_time = 600000
 
         #chance of spawning a [blank] is 1 in [blank]_chance ticks
-        self.Bouncer_chance = 9000
+        self.Bouncer_chance = 13000
         self.Timebomb_chance = 12000
         
         #define spawns
@@ -811,7 +821,7 @@ class SpawnManager():
         #[][1] is arguments
         #[][2] is when to spawn
         #evil ball parameters are a list to make arguments iterable
-        self.spawnonce_list = [[Bouncer,(self.game,True),1000],[Bouncer,(self.game,True),3000],[timebomb, self.spawn_list[1][1],4000],[EvilBall,[self.game],24000]]
+        self.spawnonce_list = [[Bouncer,(self.game,True),1000],[timebomb, self.spawn_list[1][1],4000],[EvilBall,[self.game],24000]]
         #list of hasrun variables for spawnonce
         self.hasrun = []
         for i in range(len(self.spawnonce_list)):
@@ -825,7 +835,7 @@ class SpawnManager():
         #1/x chance of spawning(will not be mutabled)
         #1/x chance of spawning (will be mutabled)
         #after x ticks, it can spawn
-        self.spawn_list = [[Bouncer,(self.game,True),self.Bouncer_chance,self.Bouncer_chance,0],[timebomb,(self.game, random.randint(20,WIDTH-20),random.randint(20,HEIGHT-190)),self.Timebomb_chance,self.Timebomb_chance, 10000]]
+        self.spawn_list = [[Bouncer,(self.game,True),self.Bouncer_chance,self.Bouncer_chance,0],[timebomb,(self.game, random.randint(20,WIDTH-20),random.randint(20,HEIGHT-230)),self.Timebomb_chance,self.Timebomb_chance, 10000]]
 
 
     def spawn(self):
